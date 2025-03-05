@@ -38,8 +38,11 @@ public class MeshGenerator : MonoBehaviour
     public void StartTerrain()
     {   
         seedString = gameObject.GetComponent<SeedGenerator>().GetSeed();
+
         GenerateTerrain();
         StartCoroutine(CheckPlayerChunkPos());
+
+        ForceUpdateChunks();
     }
 
     void GenerateTerrain()
@@ -138,6 +141,13 @@ public class MeshGenerator : MonoBehaviour
         }
     }
 
+    public void ForceUpdateChunks()
+    {
+        Vector3 playerPos = player.transform.position;
+        Vector2Int playerChunkCoord = new Vector2Int(Mathf.FloorToInt(playerPos.x / chunkSize), Mathf.FloorToInt(playerPos.z / chunkSize));
+        UpdateChunks(playerChunkCoord);
+    }
+
     private void UpdateChunks(Vector2Int playerChunkCoord)
     {
         if (player == null)
@@ -189,6 +199,8 @@ public class MeshGenerator : MonoBehaviour
                 }
             }
         }
+
+
 
         foreach (var chunk in loadedChunks.ToList())
         {
