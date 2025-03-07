@@ -28,6 +28,8 @@ public class MeshGenerator : MonoBehaviour
     private Dictionary<Vector2Int, MeshData> terrainDataDictionary;
     private HashSet<Vector2Int> loadedChunks;
 
+    private bool hasGeneratedData = false;
+
     private float playerFOV = 90f;
 
     private void Start()
@@ -40,7 +42,11 @@ public class MeshGenerator : MonoBehaviour
         seedString = gameObject.GetComponent<SeedGenerator>().GetSeed();
 
         GenerateTerrain();
-        StartCoroutine(CheckPlayerChunkPos());
+        if (hasGeneratedData)
+        {
+            StartCoroutine(CheckPlayerChunkPos());
+        }
+        
 
         ForceUpdateChunks();
     }
@@ -60,13 +66,11 @@ public class MeshGenerator : MonoBehaviour
         {
             for (int x = -xOffset; x < xSize - xOffset; x += chunkSize)
             {
-                MeshData meshData = GenerateTerrainChunkData(x, z, seed);
-
-                // Save mesh data in chunk position
-                Vector2Int chunkPos = new Vector2Int(x / chunkSize, z / chunkSize);
-                terrainDataDictionary[chunkPos] = meshData;
+                StartCoroutine(GenerateTerrainChunkData(x, z, seed));
             }
         }
+
+        hasGeneratedData = true;
     }
 
     float GetSeedFromString(string seedString)
@@ -76,7 +80,7 @@ public class MeshGenerator : MonoBehaviour
         return normalizedSeed;
     }
 
-    MeshData GenerateTerrainChunkData(int startX, int startZ, float seed)
+    IEnumerator GenerateTerrainChunkData(int startX, int startZ, float seed)
     {
         // Same seed -> Same random values
         UnityEngine.Random.InitState((int)seed);
@@ -121,7 +125,11 @@ public class MeshGenerator : MonoBehaviour
             vert++;
         }
 
-        return meshData;
+        // Save mesh data in chunk position
+        Vector2Int chunkPos = new Vector2Int(startX / chunkSize, startZ / chunkSize);
+        terrainDataDictionary[chunkPos] = meshData;
+
+        yield return null;
     }
 
     private IEnumerator CheckPlayerChunkPos() // Update chunks if player moves to new chunk
@@ -162,6 +170,8 @@ public class MeshGenerator : MonoBehaviour
         // newLoadedChunks -> Which chunks should be loaded
         // loadedChunks -> Which chunks are currently loaded
 
+        Debug.Log((int)Mathf.Log(chunkSize));
+
         // Load and Unload chunks around player
         for (int z = -loadRadius; z <= loadRadius; z++)
         {
@@ -170,24 +180,28 @@ public class MeshGenerator : MonoBehaviour
                 Vector2Int chunkCoord = new Vector2Int(playerChunkCoord.x + x, playerChunkCoord.y + z);
 
                 // Check if the chunk is within a circular radius
-                float distance = Vector2Int.Distance(chunkCoord, playerChunkCoord);
-                if (distance > loadRadius) continue;
+                float loadDistance = Vector2Int.Distance(chunkCoord, playerChunkCoord);
+                if (loadDistance > loadRadius) continue;
 
                 newLoadedChunks.Add(chunkCoord);
 
                 // Check if chunk data exists (meshData is empty outside of the terrain)
                 if (terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
                 {
+                    // Create New Chunk
                     if (!loadedChunks.Contains(chunkCoord))
                     {
-                        int lod = Mathf.Clamp((int)distance, 1, 6); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
+                        int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
+                        int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f)); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
 
                         DisplayChunk(chunkCoord.x, chunkCoord.y, lod);
                     }
 
+                    // Update Existing Chunk
                     if (loadedChunks.Contains(chunkCoord) && newLoadedChunks.Contains(chunkCoord))
                     {
-                        int lod = Mathf.Clamp((int)distance, 1, 6); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
+                        int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
+                        int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f)); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
 
                         if (lod != terrainDataDictionary[chunkCoord].lod)
                         {
