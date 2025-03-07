@@ -5,6 +5,7 @@ using UnityEditor.UI;
 using UnityEngine;
 using static UnityEngine.Mesh;
 using System.Linq;
+using Unity.VisualScripting;
 
 public class MeshGenerator : MonoBehaviour
 {
@@ -27,6 +28,7 @@ public class MeshGenerator : MonoBehaviour
 
     private Dictionary<Vector2Int, MeshData> terrainDataDictionary;
     private HashSet<Vector2Int> loadedChunks;
+    private List<GameObject> LargeChunks = new List<GameObject>();
 
     private bool hasGeneratedData = false;
 
@@ -165,12 +167,17 @@ public class MeshGenerator : MonoBehaviour
         }
 
         HashSet<Vector2Int> newLoadedChunks = new HashSet<Vector2Int>();
-        Vector3 playerForward = new Vector3(player.forward.x, 0, player.forward.z).normalized;
+        List<Vector2Int> lowDetailChunks = new List<Vector2Int>();
 
         // newLoadedChunks -> Which chunks should be loaded
         // loadedChunks -> Which chunks are currently loaded
+        // lowDetailChunks -> Chunks to be combined
 
-        Debug.Log((int)Mathf.Log(chunkSize));
+        foreach (var LargeChunk in LargeChunks)
+        {
+            UnloadLargeChunk(LargeChunk);
+        }
+        LargeChunks.Clear();
 
         // Load and Unload chunks around player
         for (int z = -loadRadius; z <= loadRadius; z++)
@@ -188,82 +195,204 @@ public class MeshGenerator : MonoBehaviour
                 // Check if chunk data exists (meshData is empty outside of the terrain)
                 if (terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
                 {
+                    //// Create New Chunk
+                    //if (!loadedChunks.Contains(chunkCoord))
+                    //{
+                    //    int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
+                    //    int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
+
+                    //    DisplayChunk(chunkCoord.x, chunkCoord.y, lod);
+                    //}
+
+                    //// Update Existing Chunk
+                    //if (loadedChunks.Contains(chunkCoord) && newLoadedChunks.Contains(chunkCoord))
+                    //{
+                    //    int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
+                    //    int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
+
+                    //    if (lod != terrainDataDictionary[chunkCoord].lod)
+                    //    {
+                    //        //Debug.Log("Updating LOD for chunk: " + chunkCoord + ". Old_LOD: " + terrainDataDictionary[chunkCoord].lod + ". New_LOD: " + lod);
+                    //        terrainDataDictionary[chunkCoord].lod = lod;
+                    //        UpdateChunkLOD(chunkCoord.x, chunkCoord.y, lod);
+                    //    }
+                    //}
+
+                    int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
+                    int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
+
                     // Create New Chunk
                     if (!loadedChunks.Contains(chunkCoord))
                     {
-                        int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
-                        int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f)); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
-
-                        DisplayChunk(chunkCoord.x, chunkCoord.y, lod);
+                        if (lod < 6)
+                        {
+                            DisplayChunks(new List<Vector2Int> { chunkCoord }, lod);
+                        }
+                        else
+                        {
+                            //Debug.Log("Chunk is too far away: " + chunkCoord);
+                            lowDetailChunks.Add(chunkCoord);
+                        }
                     }
 
-                    // Update Existing Chunk
+                    // Update Existing Chunk if LOD has changed
                     if (loadedChunks.Contains(chunkCoord) && newLoadedChunks.Contains(chunkCoord))
                     {
-                        int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
-                        int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f)); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
-
-                        if (lod != terrainDataDictionary[chunkCoord].lod)
+                        if (lod != meshData.lod)
                         {
-                            //Debug.Log("Updating LOD for chunk: " + chunkCoord + ". Old_LOD: " + terrainDataDictionary[chunkCoord].lod + ". New_LOD: " + lod);
-                            terrainDataDictionary[chunkCoord].lod = lod;
+                            meshData.lod = lod;
                             UpdateChunkLOD(chunkCoord.x, chunkCoord.y, lod);
+                        }
+                        else
+                        {
+                            if (lod == 6)
+                            {
+                                lowDetailChunks.Add(chunkCoord);
+                            }
                         }
                     }
                 }
             }
         }
 
+        //// Display high detail chunks individually
+        //foreach (var chunkCoord in highDetailChunks)
+        //{
+        //    DisplayChunks(new List<Vector2Int> { chunkCoord }, 1);
+        //}
 
+        // Combine and display low detail chunks
+        if (lowDetailChunks.Count() > 0)
+        {
+            DisplayChunks(lowDetailChunks, (int)Mathf.Log(chunkSize, 2.0f) + 1);
+            foreach (var chunk in lowDetailChunks)
+            {
+                //Debug.Log("Unloading chunk: " + chunk);
+                UnloadChunk(chunk.x, chunk.y);
+            }
+        }
 
         foreach (var chunk in loadedChunks.ToList())
         {
             if (!newLoadedChunks.Contains(chunk))
             {
+                //Debug.Log("Unloading chunk: " + chunk);
                 UnloadChunk(chunk.x, chunk.y);
             }
         }
 
         loadedChunks = newLoadedChunks;
+
+        lowDetailChunks.Clear();
+        
     }
 
     public void UpdateChunkLOD(int x, int z, int lod)
     {
         UnloadChunk(x, z);
 
-        DisplayChunk(x, z, lod);
+        DisplayChunks(new List<Vector2Int> { new Vector2Int(x, z) }, lod);
     }
 
-    public void DisplayChunk(int x, int z, int lod)
+    //public void DisplayChunk(int x, int z, int lod)
+    //{
+    //    Vector2Int chunkPos = new Vector2Int(x, z);
+
+    //    if (terrainDataDictionary.TryGetValue(chunkPos, out MeshData meshData))
+    //    {
+    //        //Debug.Log($"Displaying chunk at: {x}, {z}");
+    //        Mesh mesh = new Mesh();
+
+    //        // Apply LOD to mesh data
+    //        var (reducedVertices, reducedUVs) = ApplyLOD(meshData.vertices, meshData.uvs, lod);
+    //        mesh.vertices = reducedVertices;
+    //        mesh.uv = reducedUVs;
+    //        mesh.triangles = ApplyLODToTriangles(meshData.triangles, lod);
+    //        mesh.RecalculateNormals();
+
+    //        // Create Chunks GameObject
+    //        GameObject chunk = new GameObject($"TerrainChunk_{x}_{z}");
+    //        chunk.AddComponent<MeshFilter>().mesh = mesh;
+    //        var meshRenderer = chunk.AddComponent<MeshRenderer>();
+
+    //        meshRenderer.material = newMaterial;
+    //        chunk.transform.SetParent(terrainManager.transform);
+    //        chunk.layer = LayerMask.NameToLayer("Ground");
+    //        chunk.AddComponent<MeshCollider>().sharedMesh = mesh;
+    //    }
+    //    else
+    //    {
+    //        Debug.LogError("Chunk data not found for position: " + chunkPos);
+    //    }
+    //}
+
+    public void DisplayChunks(List<Vector2Int> chunkCoords, int lod)
     {
-        Vector2Int chunkPos = new Vector2Int(x, z);
+        List<Vector3> combinedVertices = new List<Vector3>();
+        List<Vector2> combinedUVs = new List<Vector2>();
+        List<int> combinedTriangles = new List<int>();
 
-        if (terrainDataDictionary.TryGetValue(chunkPos, out MeshData meshData))
+        int vertexOffset = 0;
+
+        foreach (var chunk in chunkCoords){
+            Debug.Log("X: " + chunk.x + ". Z: " + chunk.y);
+        }
+
+        
+
+        foreach (var chunkCoord in chunkCoords)
         {
-            //Debug.Log($"Displaying chunk at: {x}, {z}");
-            Mesh mesh = new Mesh();
+            if (terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
+            {
+                // Apply LOD to mesh data
+                var (reducedVertices, reducedUVs) = ApplyLOD(meshData.vertices, meshData.uvs, lod);
+                int[] reducedTriangles = ApplyLODToTriangles(meshData.triangles, lod);
 
-            // Apply LOD to mesh data
-            var (reducedVertices, reducedUVs) = ApplyLOD(meshData.vertices, meshData.uvs, lod);
-            mesh.vertices = reducedVertices;
-            mesh.uv = reducedUVs;
-            mesh.triangles = ApplyLODToTriangles(meshData.triangles, lod);
-            mesh.RecalculateNormals();
+                combinedVertices.AddRange(reducedVertices);
+                combinedUVs.AddRange(reducedUVs);
 
-            // Create Chunks GameObject
-            GameObject chunk = new GameObject($"TerrainChunk_{x}_{z}");
-            chunk.AddComponent<MeshFilter>().mesh = mesh;
-            var meshRenderer = chunk.AddComponent<MeshRenderer>();
+                for (int i = 0; i < reducedTriangles.Length; i++)
+                {
+                    combinedTriangles.Add(reducedTriangles[i] + vertexOffset);
+                }
 
-            meshRenderer.material = newMaterial;
-            chunk.transform.SetParent(terrainManager.transform);
-            chunk.layer = LayerMask.NameToLayer("Ground");
-            chunk.AddComponent<MeshCollider>().sharedMesh = mesh;
+                vertexOffset += reducedVertices.Length;
+            }
+            else
+            {
+                Debug.LogError("Chunk data not found for position: " + chunkCoord);
+            }
+        }
+
+        
+
+        Mesh combinedMesh = new Mesh();
+        combinedMesh.vertices = combinedVertices.ToArray();
+        combinedMesh.uv = combinedUVs.ToArray();
+        combinedMesh.triangles = combinedTriangles.ToArray();
+        combinedMesh.RecalculateNormals();
+
+
+        
+        // Create Chunks GameObject
+        GameObject combinedChunk;
+        if (chunkCoords.Count() > 1)
+        {
+            combinedChunk = new GameObject($"Combined_TerrainChunk_{chunkCoords[0].x}_{chunkCoords[0].y}");
+            LargeChunks.Add(combinedChunk);
         }
         else
         {
-            Debug.LogError("Chunk data not found for position: " + chunkPos);
+            combinedChunk = new GameObject($"TerrainChunk_{chunkCoords[0].x}_{chunkCoords[0].y}");
         }
+        
+        combinedChunk.AddComponent<MeshFilter>().mesh = combinedMesh;
+        var meshRenderer = combinedChunk.AddComponent<MeshRenderer>();
+
+        meshRenderer.material = newMaterial;
+        combinedChunk.transform.SetParent(terrainManager.transform);
+        combinedChunk.layer = LayerMask.NameToLayer("Ground");
+        combinedChunk.AddComponent<MeshCollider>().sharedMesh = combinedMesh;
     }
 
     public void UnloadChunk(int x, int z)
@@ -274,6 +403,14 @@ public class MeshGenerator : MonoBehaviour
         if (chunk != null)
         {
             Destroy(chunk);
+        }
+    }
+    public void UnloadLargeChunk(GameObject LargeChunk)
+    {
+
+        if (LargeChunk != null)
+        {
+            Destroy(LargeChunk);
         }
     }
 

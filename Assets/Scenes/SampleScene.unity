@@ -816,10 +816,9 @@ MonoBehaviour:
   octaves: 8
   persistence: 0.4
   lacunarity: 2
-  newMaterial: {fileID: 2100000, guid: c6369a11a4b7dfb4082bacb4d16befd5, type: 2}
+  newMaterial: {fileID: 15303, guid: 0000000000000000f000000000000000, type: 0}
   terrainManager: {fileID: 964517098}
   player: {fileID: 364800963}
-  playerLook: {fileID: 578677955}
   loadRadius: 25
 --- !u!4 &964517102
 Transform:
