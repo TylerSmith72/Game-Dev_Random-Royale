@@ -1,10 +1,6 @@
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using UnityEngine.Analytics;
-using UnityEngine.UI;
+
 
 public class SeedGenerator : MonoBehaviour
 {
@@ -17,8 +13,10 @@ public class SeedGenerator : MonoBehaviour
 
         List<string> selectedWords = GetRandomWords(3);
         string joined = string.Join("", selectedWords);
-
         SetSeed(joined);
+
+        //SetSeed("awedsxdfrtfvghbjkmkl"); // For Testing
+
         gameObject.GetComponent<MeshGenerator>().StartTerrain();
     }
 

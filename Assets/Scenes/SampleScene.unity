@@ -122,6 +122,37 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &229264429
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 229264430}
+  m_Layer: 0
+  m_Name: Trees
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &229264430
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 229264429}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 964517102}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &364800962
 GameObject:
   m_ObjectHideFlags: 0
@@ -198,8 +229,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 400
-  groundDrag: 8
-  jumpForce: 6.5
+  groundDrag: 10
+  jumpForce: 10
   jumpCoolDown: 0.5
   airMultiplier: 0.05
   orientation: {fileID: 578677955}
@@ -373,7 +404,7 @@ GameObject:
   - component: {fileID: 515156520}
   - component: {fileID: 515156519}
   m_Layer: 7
-  m_Name: Cube
+  m_Name: Platform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -736,10 +767,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 964517102}
-  - component: {fileID: 964517101}
   - component: {fileID: 964517100}
   - component: {fileID: 964517099}
+  - component: {fileID: 964517101}
   - component: {fileID: 964517103}
+  - component: {fileID: 964517104}
   m_Layer: 0
   m_Name: TerrainManager
   m_TagString: Untagged
@@ -808,15 +840,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 644be33014badbd42b25c635f1e5116e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  chunkSize: 32
   xSize: 4096
   zSize: 4096
   scale: 2000
   heightFactor: 1200
   seedString: default
-  octaves: 8
+  octaves: 4
   persistence: 0.4
   lacunarity: 2
-  newMaterial: {fileID: 15303, guid: 0000000000000000f000000000000000, type: 0}
+  newMaterial: {fileID: 2100000, guid: c6369a11a4b7dfb4082bacb4d16befd5, type: 2}
   terrainManager: {fileID: 964517098}
   player: {fileID: 364800963}
   loadRadius: 25
@@ -832,7 +865,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 229264430}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &964517103
@@ -847,6 +881,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e8a7c264760461468f05869affbe1a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &964517104
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964517098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26b3c0a3e47f4fa43aa517fe2f03aac4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  xSize: 4096
+  zSize: 4096
+  chunkSize: 32
+  treeDensity: 0.7
+  treeFrequency: 50
+  treeRadius: 100
+  player: {fileID: 364800962}
+  treePrefab: {fileID: 9001912316808447750, guid: c7ed1d672718103409423c1bac2f2b55, type: 3}
+  treeParent: {fileID: 229264429}
+  meshGenerator: {fileID: 964517101}
 --- !u!1 &1707933318
 GameObject:
   m_ObjectHideFlags: 0

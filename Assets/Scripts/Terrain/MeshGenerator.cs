@@ -1,15 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.UI;
 using UnityEngine;
-using static UnityEngine.Mesh;
 using System.Linq;
-using Unity.VisualScripting;
 
 public class MeshGenerator : MonoBehaviour
 {
-    private int chunkSize = 32;
+    public int chunkSize = 32;
     public int xSize = 4096;
     public int zSize = 4096;
     public float scale = 2000f;
@@ -26,7 +23,8 @@ public class MeshGenerator : MonoBehaviour
     Vector2Int lastPlayerChunkCoord = new Vector2Int(0, 0);
     public int loadRadius = 2;
 
-    private Dictionary<Vector2Int, MeshData> terrainDataDictionary;
+    private Quadtree<Vector2Int> quadtree;
+    public Dictionary<Vector2Int, MeshData> terrainDataDictionary;
     private HashSet<Vector2Int> loadedChunks;
     private List<GameObject> LargeChunks = new List<GameObject>();
 
@@ -36,14 +34,18 @@ public class MeshGenerator : MonoBehaviour
 
     private void Start()
     {
-
+        
     }
 
     public void StartTerrain()
     {   
         seedString = gameObject.GetComponent<SeedGenerator>().GetSeed();
+        quadtree = new Quadtree<Vector2Int>(0, new Rect(-xSize / 2, -zSize / 2, xSize, zSize));
 
         GenerateTerrain();
+        TreeGenerator treeGenerator = gameObject.GetComponent<TreeGenerator>();
+        treeGenerator.StartTreeGeneration(seedString);
+
         if (hasGeneratedData)
         {
             StartCoroutine(CheckPlayerChunkPos());
@@ -51,6 +53,8 @@ public class MeshGenerator : MonoBehaviour
         
 
         ForceUpdateChunks();
+
+        
     }
 
     void GenerateTerrain()
@@ -60,6 +64,7 @@ public class MeshGenerator : MonoBehaviour
 
         terrainDataDictionary = new Dictionary<Vector2Int, MeshData>();
         loadedChunks = new HashSet<Vector2Int>();
+        
 
         int xOffset = xSize / 2;
         int zOffset = zSize / 2;
@@ -68,6 +73,8 @@ public class MeshGenerator : MonoBehaviour
         {
             for (int x = -xOffset; x < xSize - xOffset; x += chunkSize)
             {
+                Vector2Int chunkCoord = new Vector2Int(x / chunkSize, z / chunkSize);
+                quadtree.Insert(chunkCoord, new Rect(x, z, chunkSize, chunkSize));
                 StartCoroutine(GenerateTerrainChunkData(x, z, seed));
             }
         }
@@ -179,87 +186,79 @@ public class MeshGenerator : MonoBehaviour
         }
         LargeChunks.Clear();
 
+        Rect playerBounds = new Rect(playerChunkCoord.x * chunkSize - loadRadius * chunkSize, playerChunkCoord.y * chunkSize - loadRadius * chunkSize, loadRadius * 2 * chunkSize, loadRadius * 2 * chunkSize);
+        List<Vector2Int> nearbyChunks = quadtree.Retrieve(new List<Vector2Int>(), playerBounds);
+
         // Load and Unload chunks around player
-        for (int z = -loadRadius; z <= loadRadius; z++)
+        foreach (var chunkCoord in nearbyChunks)
         {
-            for (int x = -loadRadius; x <= loadRadius; x++)
+
+            // Check if the chunk is within a circular radius
+            if ((chunkCoord - playerChunkCoord).sqrMagnitude > loadRadius * loadRadius)
+                continue;
+
+
+            newLoadedChunks.Add(chunkCoord);
+
+            // Check if chunk data exists (meshData is empty outside of the terrain)
+            if (terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
             {
-                Vector2Int chunkCoord = new Vector2Int(playerChunkCoord.x + x, playerChunkCoord.y + z);
+                int lodDistance; // Represents the chunk's distance category
+                int maxHighDetailDistance = 1; // 3x3 area around the player (1 chunk radius)
+                int mediumDetailDistance = 2; // Surrounding 5x5 area (2 chunk radius)
 
-                // Check if the chunk is within a circular radius
-                float loadDistance = Vector2Int.Distance(chunkCoord, playerChunkCoord);
-                if (loadDistance > loadRadius) continue;
+                // Calculate Manhattan distance between chunk and player
+                int manhattanDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
 
-                newLoadedChunks.Add(chunkCoord);
-
-                // Check if chunk data exists (meshData is empty outside of the terrain)
-                if (terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
+                // Assign LOD based on the Manhattan distance
+                if (manhattanDistance <= maxHighDetailDistance)
                 {
-                    //// Create New Chunk
-                    //if (!loadedChunks.Contains(chunkCoord))
-                    //{
-                    //    int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
-                    //    int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
+                    lodDistance = 4; // High detail (3x3 area)
+                }
+                else if (manhattanDistance == mediumDetailDistance)
+                {
+                    lodDistance = 5; // Medium detail (surrounding row)
+                }
+                else
+                {
+                    lodDistance = 6; // Low detail (everything further)
+                }
 
-                    //    DisplayChunk(chunkCoord.x, chunkCoord.y, lod);
-                    //}
 
-                    //// Update Existing Chunk
-                    //if (loadedChunks.Contains(chunkCoord) && newLoadedChunks.Contains(chunkCoord))
-                    //{
-                    //    int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
-                    //    int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
+                int lod = Mathf.Clamp((int)lodDistance, 3, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1-4 (close) to LOD = 4+ (far)
 
-                    //    if (lod != terrainDataDictionary[chunkCoord].lod)
-                    //    {
-                    //        //Debug.Log("Updating LOD for chunk: " + chunkCoord + ". Old_LOD: " + terrainDataDictionary[chunkCoord].lod + ". New_LOD: " + lod);
-                    //        terrainDataDictionary[chunkCoord].lod = lod;
-                    //        UpdateChunkLOD(chunkCoord.x, chunkCoord.y, lod);
-                    //    }
-                    //}
-
-                    int lodDistance = Mathf.Max(Mathf.Abs(chunkCoord.x - playerChunkCoord.x), Mathf.Abs(chunkCoord.y - playerChunkCoord.y));
-                    int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1 (close) to LOD = 3 (far)
-
-                    // Create New Chunk
-                    if (!loadedChunks.Contains(chunkCoord))
+                // Create New Chunk
+                if (!loadedChunks.Contains(chunkCoord))
+                {
+                    if (lod < 6)
                     {
-                        if (lod < 6)
-                        {
-                            DisplayChunks(new List<Vector2Int> { chunkCoord }, lod);
-                        }
-                        else
-                        {
-                            //Debug.Log("Chunk is too far away: " + chunkCoord);
-                            lowDetailChunks.Add(chunkCoord);
-                        }
+                        DisplayChunks(new List<Vector2Int> { chunkCoord }, lod);
                     }
-
-                    // Update Existing Chunk if LOD has changed
-                    if (loadedChunks.Contains(chunkCoord) && newLoadedChunks.Contains(chunkCoord))
+                    else
                     {
-                        if (lod != meshData.lod)
+                        //Debug.Log("Chunk is too far away: " + chunkCoord);
+                        lowDetailChunks.Add(chunkCoord);
+                    }
+                }
+
+                // Update Existing Chunk if LOD has changed
+                if (loadedChunks.Contains(chunkCoord) && newLoadedChunks.Contains(chunkCoord))
+                {
+                    if (lod != meshData.lod)
+                    {
+                        meshData.lod = lod;
+                        UpdateChunkLOD(chunkCoord.x, chunkCoord.y, lod);
+                    }
+                    else
+                    {
+                        if (lod == 6)
                         {
-                            meshData.lod = lod;
-                            UpdateChunkLOD(chunkCoord.x, chunkCoord.y, lod);
-                        }
-                        else
-                        {
-                            if (lod == 6)
-                            {
-                                lowDetailChunks.Add(chunkCoord);
-                            }
+                            lowDetailChunks.Add(chunkCoord);
                         }
                     }
                 }
             }
         }
-
-        //// Display high detail chunks individually
-        //foreach (var chunkCoord in highDetailChunks)
-        //{
-        //    DisplayChunks(new List<Vector2Int> { chunkCoord }, 1);
-        //}
 
         // Combine and display low detail chunks
         if (lowDetailChunks.Count() > 0)
@@ -294,38 +293,6 @@ public class MeshGenerator : MonoBehaviour
         DisplayChunks(new List<Vector2Int> { new Vector2Int(x, z) }, lod);
     }
 
-    //public void DisplayChunk(int x, int z, int lod)
-    //{
-    //    Vector2Int chunkPos = new Vector2Int(x, z);
-
-    //    if (terrainDataDictionary.TryGetValue(chunkPos, out MeshData meshData))
-    //    {
-    //        //Debug.Log($"Displaying chunk at: {x}, {z}");
-    //        Mesh mesh = new Mesh();
-
-    //        // Apply LOD to mesh data
-    //        var (reducedVertices, reducedUVs) = ApplyLOD(meshData.vertices, meshData.uvs, lod);
-    //        mesh.vertices = reducedVertices;
-    //        mesh.uv = reducedUVs;
-    //        mesh.triangles = ApplyLODToTriangles(meshData.triangles, lod);
-    //        mesh.RecalculateNormals();
-
-    //        // Create Chunks GameObject
-    //        GameObject chunk = new GameObject($"TerrainChunk_{x}_{z}");
-    //        chunk.AddComponent<MeshFilter>().mesh = mesh;
-    //        var meshRenderer = chunk.AddComponent<MeshRenderer>();
-
-    //        meshRenderer.material = newMaterial;
-    //        chunk.transform.SetParent(terrainManager.transform);
-    //        chunk.layer = LayerMask.NameToLayer("Ground");
-    //        chunk.AddComponent<MeshCollider>().sharedMesh = mesh;
-    //    }
-    //    else
-    //    {
-    //        Debug.LogError("Chunk data not found for position: " + chunkPos);
-    //    }
-    //}
-
     public void DisplayChunks(List<Vector2Int> chunkCoords, int lod)
     {
         List<Vector3> combinedVertices = new List<Vector3>();
@@ -334,9 +301,9 @@ public class MeshGenerator : MonoBehaviour
 
         int vertexOffset = 0;
 
-        foreach (var chunk in chunkCoords){
-            Debug.Log("X: " + chunk.x + ". Z: " + chunk.y);
-        }
+        //foreach (var chunk in chunkCoords){
+        //    Debug.Log("X: " + chunk.x + ". Z: " + chunk.y);
+        //}
 
         
 
@@ -501,5 +468,165 @@ public class MeshData
         uvs = new Vector2[(chunkSize + 1) * (chunkSize + 1)];
         triangles = new int[chunkSize * chunkSize * 6];
         this.lod = lod;
+    }
+}
+
+public class Quadtree<T>
+{
+    private readonly int maxObjects;
+    private readonly int maxLevels;
+    private readonly int level;
+    private readonly List<T> objects;
+    private readonly Rect bounds;
+    private readonly Quadtree<T>[] nodes;
+
+    public Quadtree(int level, Rect bounds, int maxObjects = 10, int maxLevels = 5)
+    {
+        this.level = level;
+        this.bounds = bounds;
+        this.maxObjects = maxObjects;
+        this.maxLevels = maxLevels;
+        objects = new List<T>();
+        nodes = new Quadtree<T>[4];
+    }
+
+    public void Clear()
+    {
+        objects.Clear();
+        for (int i = 0; i < nodes.Length; i++)
+        {
+            if (nodes[i] != null)
+            {
+                nodes[i].Clear();
+                nodes[i] = null;
+            }
+        }
+    }
+
+    private void Split()
+    {
+        int subWidth = (int)(bounds.width / 2);
+        int subHeight = (int)(bounds.height / 2);
+        int x = (int)bounds.x;
+        int y = (int)bounds.y;
+
+        nodes[0] = new Quadtree<T>(level + 1, new Rect(x + subWidth, y, subWidth, subHeight));
+        nodes[1] = new Quadtree<T>(level + 1, new Rect(x, y, subWidth, subHeight));
+        nodes[2] = new Quadtree<T>(level + 1, new Rect(x, y + subHeight, subWidth, subHeight));
+        nodes[3] = new Quadtree<T>(level + 1, new Rect(x + subWidth, y + subHeight, subWidth, subHeight));
+    }
+
+    private int GetIndex(Rect pRect)
+    {
+        int index = -1;
+        double verticalMidpoint = bounds.x + (bounds.width / 2);
+        double horizontalMidpoint = bounds.y + (bounds.height / 2);
+
+        bool topQuadrant = (pRect.y < horizontalMidpoint && pRect.y + pRect.height < horizontalMidpoint);
+        bool bottomQuadrant = (pRect.y > horizontalMidpoint);
+
+        if (pRect.x < verticalMidpoint && pRect.x + pRect.width < verticalMidpoint)
+        {
+            if (topQuadrant)
+            {
+                index = 1;
+            }
+            else if (bottomQuadrant)
+            {
+                index = 2;
+            }
+        }
+        else if (pRect.x > verticalMidpoint)
+        {
+            if (topQuadrant)
+            {
+                index = 0;
+            }
+            else if (bottomQuadrant)
+            {
+                index = 3;
+            }
+        }
+
+        return index;
+    }
+
+    private List<int> GetIndices(Rect pRect)
+    {
+        List<int> indices = new List<int>();
+        double verticalMidpoint = bounds.x + (bounds.width / 2);
+        double horizontalMidpoint = bounds.y + (bounds.height / 2);
+
+        bool topQuadrant = pRect.y < horizontalMidpoint;
+        bool bottomQuadrant = pRect.y + pRect.height > horizontalMidpoint;
+        bool leftQuadrant = pRect.x < verticalMidpoint;
+        bool rightQuadrant = pRect.x + pRect.width > verticalMidpoint;
+
+        if (topQuadrant)
+        {
+            if (rightQuadrant) indices.Add(0); // Top-right
+            if (leftQuadrant) indices.Add(1);  // Top-left
+        }
+        if (bottomQuadrant)
+        {
+            if (leftQuadrant) indices.Add(2);  // Bottom-left
+            if (rightQuadrant) indices.Add(3); // Bottom-right
+        }
+
+        return indices;
+    }
+
+    public void Insert(T obj, Rect pRect)
+    {
+        if (nodes[0] != null)
+        {
+            int index = GetIndex(pRect);
+
+            if (index != -1)
+            {
+                nodes[index].Insert(obj, pRect);
+                return;
+            }
+        }
+
+        objects.Add(obj);
+
+        if (objects.Count > maxObjects && level < maxLevels)
+        {
+            if (nodes[0] == null)
+            {
+                Split();
+            }
+
+            int i = 0;
+            while (i < objects.Count)
+            {
+                int index = GetIndex(pRect);
+                if (index != -1)
+                {
+                    nodes[index].Insert(objects[i], pRect);
+                    objects.RemoveAt(i);
+                }
+                else
+                {
+                    i++;
+                }
+            }
+        }
+    }
+
+    public List<T> Retrieve(List<T> returnObjects, Rect pRect)
+    {
+        var indices = GetIndices(pRect);
+        foreach (int index in indices)
+        {
+            if (nodes[index] != null)
+            {
+                nodes[index].Retrieve(returnObjects, pRect);
+            }
+        }
+
+        returnObjects.AddRange(objects);
+        return returnObjects;
     }
 }
