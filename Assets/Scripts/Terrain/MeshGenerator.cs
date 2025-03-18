@@ -32,13 +32,14 @@ public class MeshGenerator : MonoBehaviour
 
     private float playerFOV = 90f;
 
-    private void Start()
+    public void SetPlayer(Transform playerTransform)
     {
-        
+        player = playerTransform; // Assign the player's Transform reference.
+        Debug.Log("Player set for MeshGenerator: " + player.name);
     }
 
     public void StartTerrain()
-    {   
+    {
         seedString = gameObject.GetComponent<SeedGenerator>().GetSeed();
         quadtree = new Quadtree<Vector2Int>(0, new Rect(-xSize / 2, -zSize / 2, xSize, zSize));
 
@@ -143,6 +144,12 @@ public class MeshGenerator : MonoBehaviour
 
     private IEnumerator CheckPlayerChunkPos() // Update chunks if player moves to new chunk
     {
+        while (player == null)
+        {
+            Debug.LogWarning("Waiting for player to be set in MeshGenerator...");
+            yield return null; // Wait for the next frame.
+        }
+
         while (true)
         {
             Vector3 playerPos = player.transform.position;

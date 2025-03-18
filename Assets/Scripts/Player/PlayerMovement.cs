@@ -1,6 +1,8 @@
 using UnityEngine;
+using FishNet.Connection;
+using FishNet.Object;
 
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : NetworkBehaviour
 {
     public float moveSpeed;
     public float groundDrag;
@@ -10,6 +12,8 @@ public class PlayerMovement : MonoBehaviour
 
     public Transform orientation;
     public LayerMask groundLayer;
+    public GameObject camera;
+    public GameObject TerrainManager;
 
     private float horizontalInput;
     private float verticalInput;
@@ -18,6 +22,22 @@ public class PlayerMovement : MonoBehaviour
 
     Vector3 moveDirection;
     Rigidbody rb;
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if (base.IsOwner)
+        {
+            Camera.main.GetComponent<MoveCam>().SetPlayer(transform.Find("CameraPos"));
+            Camera.main.GetComponent<PlayerCam>().SetOrientation(orientation);
+            TerrainManager.GetComponent<MeshGenerator>().SetPlayer(gameObject.transform);
+            TerrainManager.GetComponent<TreeGenerator>().SetPlayer(gameObject);
+        }
+        else
+        {
+            gameObject.GetComponent<PlayerMovement>().enabled = false;
+        }
+    }
 
     private void Start()
     {

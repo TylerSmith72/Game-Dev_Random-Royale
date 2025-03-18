@@ -14,7 +14,7 @@ public class TreeGenerator : MonoBehaviour
     public float treeDensity = 100f;
     public float treeFrequency = 100f;
     public float treeRadius = 1000f;
-    public GameObject player;
+    private GameObject player;
     public GameObject treePrefab;
     public GameObject treeParent;
 
@@ -23,12 +23,17 @@ public class TreeGenerator : MonoBehaviour
     private float treeUpdateInterval = 0.5f; // Update every 0.5 seconds
     private float nextTreeUpdateTime = 0f;
 
-    private HashSet<Vector3> TreePositions = new HashSet<Vector3>();
+    private Dictionary<Vector3, Quaternion> TreeData = new Dictionary<Vector3, Quaternion>();
     private Dictionary<Vector3, GameObject> ActiveTrees = new Dictionary<Vector3, GameObject>();
 
     private Queue<Vector3> treeQueue = new Queue<Vector3>(); // To store trees waiting to be instantiated
     private HashSet<Vector3> loadedPositions = new HashSet<Vector3>(); // To track already loaded trees
     private int maxTreesPerFrame = 20; // Number of trees to load per tree update
+
+    public void SetPlayer(GameObject playerObject)
+    {
+        player = playerObject;
+    }
 
     void Update()
     {
@@ -73,40 +78,48 @@ public class TreeGenerator : MonoBehaviour
         float offsetX = UnityEngine.Random.Range(0, 99999f);
         float offsetZ = UnityEngine.Random.Range(0, 99999f);
 
-        for (int z = -zOffset; z < zSize - zOffset; z += 5)
+        for (int z = -zOffset; z < zSize - zOffset; z += 7)
         {
-            for (int x = -xOffset; x < xSize - xOffset; x += 5)
+            for (int x = -xOffset; x < xSize - xOffset; x += 7)
             {
                 float noise = Mathf.PerlinNoise(
-                    (x + xOffset + offsetX) * (treeFrequency / 100f),
-                    (z + zOffset + offsetZ) * (treeFrequency / 100f)
+                    (x + xOffset + offsetX) / (treeFrequency / 10f),
+                    (z + zOffset + offsetZ) / (treeFrequency / 10f)
                 );
 
                 if (noise > treeDensity)
                 {
+                    Vector3 basePosition = new Vector3(x, 0, z);
+                    Vector3 offset = GetDeterministicOffset(basePosition, seed);
+                    Vector3 offsetPosition = basePosition + offset;
+                    
                     // Determine the chunk that contains the point
                     Vector2Int chunkCoord = new Vector2Int(
-                        Mathf.FloorToInt((float)x / chunkSize),
-                        Mathf.FloorToInt((float)z / chunkSize)
+                        Mathf.FloorToInt((float)offsetPosition.x / chunkSize),
+                        Mathf.FloorToInt((float)offsetPosition.z / chunkSize)
                     );
 
-                    // Check if chunk data exists
+                    // Check if chunk data exists at the offset position
                     if (meshGenerator.terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
                     {
                         // Convert world position to local chunk position
-                        float localX = ((x % chunkSize) + chunkSize) % chunkSize;
-                        float localZ = ((z % chunkSize) + chunkSize) % chunkSize;
+                        float localX = ((offsetPosition.x % chunkSize) + chunkSize) % chunkSize;
+                        float localZ = ((offsetPosition.z % chunkSize) + chunkSize) % chunkSize;
 
                         // Get the height from mesh data
-                        float groundY = GetHeightFromMeshData(meshData, localX, localZ, chunkSize) + 3;
+                        float groundY = GetHeightFromMeshData(meshData, localX, localZ, chunkSize);
 
                         if (groundY > 200 || groundY < 10)
                         {
                             continue;
                         }
 
-                        // Add the tree position with the correct y value
-                        TreePositions.Add(new Vector3(x, groundY, z));
+                        Vector3 finalTreePosition = new Vector3(offsetPosition.x, groundY, offsetPosition.z);
+
+                        Quaternion treeRotation = GetDeterministicRotation(finalTreePosition, seed);
+
+                        // Store tree position and rotation
+                        TreeData[finalTreePosition] = treeRotation;
                     }
                     else
                     {
@@ -115,6 +128,31 @@ public class TreeGenerator : MonoBehaviour
                 }
             }
         }
+    }
+
+    private Vector3 GetDeterministicOffset(Vector3 position, float seed)
+    {
+        int positionHash = position.GetHashCode();
+        int combinedSeed = Mathf.Abs(positionHash) + (int)seed;
+
+        System.Random random = new System.Random(combinedSeed);
+
+        // Random offset between -3.75 and 3.75 meters on the X and Z axes
+        float offsetX = (float)(random.NextDouble() * 7.5 - 3.75);
+        float offsetZ = (float)(random.NextDouble() * 7.5 - 3.75);
+
+        return new Vector3(offsetX, 0, offsetZ); // No offset on the Y-axis
+    }
+
+    private Quaternion GetDeterministicRotation(Vector3 position, float seed)
+    {
+        int positionHash = position.GetHashCode();
+        int combinedSeed = Mathf.Abs(positionHash) + (int)seed;
+
+        System.Random random = new System.Random(combinedSeed);
+        float randomYRotation = (float)(random.NextDouble() * 360.0);
+
+        return Quaternion.Euler(0, randomYRotation, 0); // Y-axis rotation only
     }
 
     private float GetHeightFromMeshData(MeshData meshData, float localX, float localZ, int chunkSize)
@@ -140,10 +178,18 @@ public class TreeGenerator : MonoBehaviour
 
     private void UpdateTreeQueue()
     {
+        if (player == null)
+        {
+            Debug.LogWarning("Player reference is not set!");
+            return;
+        }
+
         Vector3 playerPos = player.transform.position;
 
-        foreach (Vector3 position in TreePositions)
+        foreach (var kvp in TreeData)
         {
+            Vector3 position = kvp.Key;
+
             if (!loadedPositions.Contains(position) && (position - playerPos).sqrMagnitude <= treeRadius * treeRadius)
             {
                 treeQueue.Enqueue(position); // Add to the queue
@@ -160,7 +206,8 @@ public class TreeGenerator : MonoBehaviour
         {
             if (treeQueue.TryDequeue(out Vector3 treePosition))
             {
-                GameObject tree = Instantiate(treePrefab, treePosition, Quaternion.identity, treeParent.transform);
+                Quaternion treeRotation = TreeData[treePosition];
+                GameObject tree = Instantiate(treePrefab, treePosition, treeRotation, treeParent.transform);
                 ActiveTrees[treePosition] = tree; // Track instantiated trees
             }
         }
@@ -168,6 +215,12 @@ public class TreeGenerator : MonoBehaviour
 
     private void UnloadTreesOutsideRadius()
     {
+        if (player == null)
+        {
+            Debug.LogWarning("Player reference is not set!");
+            return;
+        }
+
         Vector3 playerPos = player.transform.position;
         List<Vector3> treesToUnload = new List<Vector3>();
 

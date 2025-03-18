@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,9 +16,25 @@ public class SeedGenerator : MonoBehaviour
         string joined = string.Join("", selectedWords);
         SetSeed(joined);
 
-        //SetSeed("awedsxdfrtfvghbjkmkl"); // For Testing
+        SetSeed("awedsxdfrtfvghbjkmkl"); // For Testing
 
-        gameObject.GetComponent<MeshGenerator>().StartTerrain();
+        StartCoroutine(WaitForPlayerAndStartTerrain());
+    }
+
+    private IEnumerator WaitForPlayerAndStartTerrain()
+    {
+        MeshGenerator meshGenerator = gameObject.GetComponent<MeshGenerator>();
+
+        // Wait until the player is assigned
+        while (meshGenerator.player == null)
+        {
+            Debug.LogWarning("Waiting for player assignment in MeshGenerator...");
+            yield return null; // Wait for the next frame
+        }
+
+        // Once the player is assigned, start terrain generation
+        Debug.Log("Player assigned. Starting terrain generation...");
+        //meshGenerator.StartTerrain();
     }
 
     public void SetSeed(string seed)
