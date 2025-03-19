@@ -1,141 +1,72 @@
 using UnityEngine;
 using FishNet.Connection;
 using FishNet.Object;
+using System.Xml.Serialization;
 
 public class PlayerMovement : NetworkBehaviour
 {
-    public float moveSpeed;
-    public float groundDrag;
-    public float jumpForce;
-    public float jumpCoolDown;
-    public float airMultiplier;
-
     public Transform orientation;
-    public LayerMask groundLayer;
-    public GameObject camera;
     public GameObject TerrainManager;
+    public MoveCam camController;
+    public PlayerCam playerCam;
 
-    private float horizontalInput;
-    private float verticalInput;
-    private bool grounded;
-    private bool readyToJump = true;
+    [Header("References")]
+    private CharacterController controller;
 
-    Vector3 moveDirection;
-    Rigidbody rb;
+    [Header("Movement Settings")]
+    [SerializeField] private float walkspeed = 5f;
+
+    [Header("Input")]
+    private float moveInput;
+    private float turnInput;
+
+    private void Start()
+    {
+        controller = GetComponent<CharacterController>();
+    }
+
+    private void Update()
+    {
+        InputManagement();
+        Movement();
+    }
+
+    private void Movement()
+    {
+        GroundMovement();
+    }
+
+    private void GroundMovement()
+    {
+        Vector3 move = new Vector3(turnInput, 0, moveInput);
+
+        move.y = 0;
+
+        move *= walkspeed;
+
+        controller.Move(move * Time.deltaTime);
+    }
+
+    private void InputManagement()
+    {
+        moveInput = Input.GetAxis("Vertical");
+        turnInput = Input.GetAxis("Horizontal");
+    }
 
     public override void OnStartClient()
     {
         base.OnStartClient();
         if (base.IsOwner)
         {
-            Camera.main.GetComponent<MoveCam>().SetPlayer(transform.Find("CameraPos"));
-            Camera.main.GetComponent<PlayerCam>().SetOrientation(orientation);
-            TerrainManager.GetComponent<MeshGenerator>().SetPlayer(gameObject.transform);
-            TerrainManager.GetComponent<TreeGenerator>().SetPlayer(gameObject);
+            Debug.Log("Player is owner");
+            //camController.GetComponent<MoveCam>().SetPlayer(transform.Find("CameraPos"));
+            //playerCam.GetComponent<PlayerCam>().SetOrientation(orientation);
+            //TerrainManager.GetComponent<MeshGenerator>().SetPlayer(gameObject.transform);
+            //TerrainManager.GetComponent<TreeGenerator>().SetPlayer(gameObject);
         }
         else
         {
             gameObject.GetComponent<PlayerMovement>().enabled = false;
         }
-    }
-
-    private void Start()
-    {
-        rb = GetComponent<Rigidbody>();
-    }
-
-    private void Update()
-    {
-        MyInput();
-        SpeedControl();
-        HandleDrag();
-    }
-
-    private void FixedUpdate()
-    {
-        MovePlayer();
-    }
-
-    private void MyInput()
-    {
-        horizontalInput = Input.GetAxisRaw("Horizontal");
-        verticalInput = Input.GetAxisRaw("Vertical");
-
-        if (Input.GetButton("Jump") && readyToJump && grounded)
-        {
-            readyToJump = false;
-            Jump();
-            Invoke(nameof(ResetJump), jumpCoolDown);
-        }
-    }
-
-    private void HandleDrag()
-    {
-        if (grounded)
-        {
-            rb.drag = groundDrag;
-        } else
-        {
-            rb.drag = 0;
-        }
-    }
-
-    private void MovePlayer()
-    {
-        moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
-
-        if (grounded)
-        {
-            rb.AddForce(moveDirection.normalized * moveSpeed * 100f, ForceMode.Force);
-        } else if(!grounded)
-        {
-            rb.AddForce(moveDirection.normalized * moveSpeed * 30f * airMultiplier, ForceMode.Force);
-        }
-
-    }
-
-    private void SpeedControl()
-    {
-        Vector3 flatVel = new Vector3(rb.velocity.x, 0, rb.velocity.z);
-
-        if (flatVel.magnitude > moveSpeed)
-        {
-            Vector3 limitedVel = flatVel.normalized * moveSpeed;
-            rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
-        }
-    }
-
-    private void Jump()
-    {
-        rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
-
-        rb.AddForce(transform.up * jumpForce * 100, ForceMode.Impulse);
-    }
-
-    private void ResetJump()
-    {
-        readyToJump = true;
-    }
-
-    private void OnCollisionStay(Collision collision)
-    {
-        if (((1 << collision.gameObject.layer) & groundLayer) != 0)
-        {
-            grounded = true;
-        }
-    }
-
-    private void OnCollisionExit(Collision collision)
-    {
-        if (((1 << collision.gameObject.layer) & groundLayer) != 0)
-        {
-            grounded = false;
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = grounded ? Color.green : Color.red;
-        Gizmos.DrawWireSphere(transform.position, 0.5f);
     }
 }
