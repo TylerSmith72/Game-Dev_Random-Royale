@@ -191,7 +191,11 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 5516940546119436445}
   _networkObjectCache: {fileID: 5516940546119436445}
   orientation: {fileID: 6574154644893829090}
+  camPos: {fileID: 2527448855636774976}
   TerrainManager: {fileID: 0}
+  camController: {fileID: 0}
+  playerCam: {fileID: 0}
+  turningSpeed: 1
   walkspeed: 10
 --- !u!114 &5516940546119436445
 MonoBehaviour:

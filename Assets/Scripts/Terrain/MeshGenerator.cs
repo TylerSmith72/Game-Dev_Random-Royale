@@ -19,7 +19,7 @@ public class MeshGenerator : MonoBehaviour
 
     public Material newMaterial;
     public GameObject terrainManager;
-    public Transform player;
+    public GameObject player;
     Vector2Int lastPlayerChunkCoord = new Vector2Int(0, 0);
     public int loadRadius = 2;
 
@@ -32,7 +32,7 @@ public class MeshGenerator : MonoBehaviour
 
     private float playerFOV = 90f;
 
-    public void SetPlayer(Transform playerTransform)
+    public void SetPlayer(GameObject playerTransform)
     {
         player = playerTransform; // Assign the player's Transform reference.
         Debug.Log("Player set for MeshGenerator: " + player.name);

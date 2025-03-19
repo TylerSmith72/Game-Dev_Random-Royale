@@ -34,7 +34,7 @@ public class SeedGenerator : MonoBehaviour
 
         // Once the player is assigned, start terrain generation
         Debug.Log("Player assigned. Starting terrain generation...");
-        //meshGenerator.StartTerrain();
+        meshGenerator.StartTerrain();
     }
 
     public void SetSeed(string seed)
