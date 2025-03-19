@@ -743,6 +743,7 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
+    Android: EDGEGAP_PLUGIN_SERVERS;FISHNET;FISHNET_V4
     Standalone: EDGEGAP_PLUGIN_SERVERS;FISHNET;FISHNET_V4
   additionalCompilerArguments: {}
   platformArchitecture: {}

@@ -12,6 +12,7 @@ public class MeshGenerator : MonoBehaviour
     public float scale = 2000f;
     public float heightFactor = 1200f;
     public string seedString = "default";
+    public float vertexSpacing = 4f;
 
     public int octaves = 8;
     public float persistence = 0.4f;
@@ -107,9 +108,9 @@ public class MeshGenerator : MonoBehaviour
 
                 float y = baseHeight - (heightFactor / 3);
 
-                meshData.vertices[i] = new Vector3(x + startX, y, z + startZ);
+                meshData.vertices[i] = new Vector3((x + startX) * vertexSpacing, y, (z + startZ) * vertexSpacing);
 
-                meshData.uvs[i] = new Vector2((float)x / chunkSize, (float)z / chunkSize);
+                meshData.uvs[i] = new Vector2((float)(x * vertexSpacing) / chunkSize, (float)(z * vertexSpacing) / chunkSize);
 
                 i++;
             }
@@ -153,7 +154,7 @@ public class MeshGenerator : MonoBehaviour
         while (true)
         {
             Vector3 playerPos = player.transform.position;
-            Vector2Int playerChunkCoord = new Vector2Int(Mathf.FloorToInt(playerPos.x / chunkSize), Mathf.FloorToInt(playerPos.z / chunkSize));
+            Vector2Int playerChunkCoord = new Vector2Int(Mathf.FloorToInt(playerPos.x / (vertexSpacing * chunkSize)), Mathf.FloorToInt(playerPos.z / (vertexSpacing * chunkSize)));
 
             if (lastPlayerChunkCoord != playerChunkCoord)
             {
@@ -168,7 +169,7 @@ public class MeshGenerator : MonoBehaviour
     public void ForceUpdateChunks()
     {
         Vector3 playerPos = player.transform.position;
-        Vector2Int playerChunkCoord = new Vector2Int(Mathf.FloorToInt(playerPos.x / chunkSize), Mathf.FloorToInt(playerPos.z / chunkSize));
+        Vector2Int playerChunkCoord = new Vector2Int(Mathf.FloorToInt(playerPos.x / (vertexSpacing * chunkSize)), Mathf.FloorToInt(playerPos.z / (vertexSpacing * chunkSize)));
         UpdateChunks(playerChunkCoord);
     }
 
@@ -220,32 +221,33 @@ public class MeshGenerator : MonoBehaviour
                 // Assign LOD based on the Manhattan distance
                 if (manhattanDistance <= maxHighDetailDistance)
                 {
-                    lodDistance = 4; // High detail (3x3 area)
+                    lodDistance = 5; // High detail (3x3 area)
                 }
                 else if (manhattanDistance == mediumDetailDistance)
                 {
-                    lodDistance = 5; // Medium detail (surrounding row)
+                    lodDistance = 6; // Medium detail (surrounding row)
                 }
                 else
                 {
-                    lodDistance = 6; // Low detail (everything further)
+                    lodDistance = 7; // Low detail (everything further)
                 }
 
 
-                int lod = Mathf.Clamp((int)lodDistance, 3, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1-4 (close) to LOD = 4+ (far)
+                int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1-4 (close) to LOD = 4+ (far)
 
                 // Create New Chunk
                 if (!loadedChunks.Contains(chunkCoord))
                 {
-                    if (lod < 6)
-                    {
-                        DisplayChunks(new List<Vector2Int> { chunkCoord }, lod);
-                    }
-                    else
-                    {
-                        //Debug.Log("Chunk is too far away: " + chunkCoord);
-                        lowDetailChunks.Add(chunkCoord);
-                    }
+                    DisplayChunks(new List<Vector2Int> { chunkCoord }, lod);
+                    //if (lod < 6)
+                    //{
+                    //    DisplayChunks(new List<Vector2Int> { chunkCoord }, lod);
+                    //}
+                    //else
+                    //{
+                    //    //Debug.Log("Chunk is too far away: " + chunkCoord);
+                    //    lowDetailChunks.Add(chunkCoord);
+                    //}
                 }
 
                 // Update Existing Chunk if LOD has changed
@@ -256,13 +258,13 @@ public class MeshGenerator : MonoBehaviour
                         meshData.lod = lod;
                         UpdateChunkLOD(chunkCoord.x, chunkCoord.y, lod);
                     }
-                    else
-                    {
-                        if (lod == 6)
-                        {
-                            lowDetailChunks.Add(chunkCoord);
-                        }
-                    }
+                    //else
+                    //{
+                    //    if (lod == 6)
+                    //    {
+                    //        lowDetailChunks.Add(chunkCoord);
+                    //    }
+                    //}
                 }
             }
         }

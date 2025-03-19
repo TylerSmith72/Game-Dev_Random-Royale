@@ -2,6 +2,7 @@ using UnityEngine;
 using FishNet.Connection;
 using FishNet.Object;
 using System.Xml.Serialization;
+using Unity.VisualScripting;
 
 public class PlayerMovement : NetworkBehaviour
 {
@@ -10,6 +11,8 @@ public class PlayerMovement : NetworkBehaviour
     public MeshGenerator TerrainManager;
     public MoveCam camController;
     public PlayerCam playerCam;
+    public GameObject visor;
+    public GameObject playerModel;
 
     [Header("References")]
     private CharacterController controller;
@@ -142,7 +145,11 @@ public class PlayerMovement : NetworkBehaviour
         }
     }
 
-
+    private void DisablePlayerModel()
+    {
+        playerModel.GetComponent<MeshRenderer>().enabled = false;
+        visor.GetComponent<MeshRenderer>().enabled = false;
+    }
 
     public override void OnStartClient()
     {
@@ -150,6 +157,7 @@ public class PlayerMovement : NetworkBehaviour
         if (base.IsOwner)
         {
             Debug.Log("Player is owner");
+            DisablePlayerModel();
             SetPlayerForAll();
         }
         else

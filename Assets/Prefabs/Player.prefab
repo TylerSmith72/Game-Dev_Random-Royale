@@ -195,8 +195,11 @@ MonoBehaviour:
   TerrainManager: {fileID: 0}
   camController: {fileID: 0}
   playerCam: {fileID: 0}
+  visor: {fileID: 1054697917607789401}
+  playerModel: {fileID: 4780353276054860749}
+  walkspeed: 50
   turningSpeed: 1
-  walkspeed: 10
+  gravity: 9.81
 --- !u!114 &5516940546119436445
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -858,6 +858,7 @@ GameObject:
   - component: {fileID: 964517101}
   - component: {fileID: 964517103}
   - component: {fileID: 964517104}
+  - component: {fileID: 964517105}
   m_Layer: 0
   m_Name: TerrainManager
   m_TagString: Untagged
@@ -926,12 +927,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 644be33014badbd42b25c635f1e5116e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chunkSize: 32
-  xSize: 4096
-  zSize: 4096
-  scale: 2000
+  chunkSize: 64
+  xSize: 1024
+  zSize: 1024
+  scale: 750
   heightFactor: 1200
   seedString: default
+  vertexSpacing: 4
   octaves: 4
   persistence: 0.4
   lacunarity: 2
@@ -979,15 +981,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b3c0a3e47f4fa43aa517fe2f03aac4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xSize: 4096
-  zSize: 4096
-  chunkSize: 32
-  treeDensity: 0.6
+  xSize: 2048
+  zSize: 2048
+  forestSize: 0.6
+  treeDensity: 8
   treeFrequency: 2000
-  treeRadius: 75
+  treeRadius: 150
   treePrefab: {fileID: 6117071349010126079, guid: d250af4848f51154f9a2bf6a85b60ac2, type: 3}
   treeParent: {fileID: 229264429}
   meshGenerator: {fileID: 964517101}
+  TreePool: {fileID: 964517105}
+--- !u!114 &964517105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964517098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e72738082073b8d4ba78b384238f69bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  treeParent: {fileID: 229264429}
+  treePrefab: {fileID: 6117071349010126079, guid: d250af4848f51154f9a2bf6a85b60ac2, type: 3}
+  poolSize: 1000
 --- !u!1 &1066107279
 GameObject:
   m_ObjectHideFlags: 0
