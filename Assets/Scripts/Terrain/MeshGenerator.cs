@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Collections;
 using System.Linq;
 
 public class MeshGenerator : MonoBehaviour
 {
+    [Header("Terrain")]
     public int chunkSize = 32;
     public int xSize = 4096;
     public int zSize = 4096;
@@ -14,12 +16,16 @@ public class MeshGenerator : MonoBehaviour
     public string seedString = "default";
     public float vertexSpacing = 4f;
 
+    [Header("Fractal Perlin Noise")]
     public int octaves = 8;
     public float persistence = 0.4f;
     public float lacunarity = 2.0f;
 
-    public Material newMaterial;
+    [Header("Materials")]
+    public Material terrainMaterial;
     public GameObject terrainManager;
+
+    [Header("Player")]
     public GameObject player;
     Vector2Int lastPlayerChunkCoord = new Vector2Int(0, 0);
     public int loadRadius = 2;
@@ -27,7 +33,8 @@ public class MeshGenerator : MonoBehaviour
     private Quadtree<Vector2Int> quadtree;
     public Dictionary<Vector2Int, MeshData> terrainDataDictionary;
     private HashSet<Vector2Int> loadedChunks;
-    private List<GameObject> LargeChunks = new List<GameObject>();
+    private List<Vector2Int> chunksToUpdate;
+    private int batchSize = 1;
 
     private bool hasGeneratedData = false;
 
@@ -35,8 +42,27 @@ public class MeshGenerator : MonoBehaviour
 
     public void SetPlayer(GameObject playerTransform)
     {
-        player = playerTransform; // Assign the player's Transform reference.
+        player = playerTransform;
         Debug.Log("Player set for MeshGenerator: " + player.name);
+    }
+
+    public void Start()
+    {
+        chunksToUpdate = new List<Vector2Int>();
+    }
+
+    public void Update()
+    {
+        if (hasGeneratedData && chunksToUpdate.Count > 0)
+        {
+            // Check which chunk LODs need to be updated from chunksToUpdate list
+            for (int i = 0; i < batchSize; i++) // One chunk LOD update per frame
+            {
+                UpdateChunkLOD(chunksToUpdate[i].x, chunksToUpdate[i].y, terrainDataDictionary[chunksToUpdate[i]].lod);
+                chunksToUpdate.RemoveAt(i);
+                
+            }            
+        }
     }
 
     public void StartTerrain()
@@ -50,13 +76,13 @@ public class MeshGenerator : MonoBehaviour
 
         if (hasGeneratedData)
         {
-            StartCoroutine(CheckPlayerChunkPos());
+            Debug.Log("Generating terrain...");
+            //StartCoroutine(CheckPlayerChunkPos());
+            // Load all chunks in high quality
+            StartCoroutine(DisplayChunksInBatches());
         }
-        
 
-        ForceUpdateChunks();
-
-        
+        //ForceUpdateChunks();
     }
 
     void GenerateTerrain()
@@ -143,6 +169,37 @@ public class MeshGenerator : MonoBehaviour
         yield return null;
     }
 
+    private IEnumerator DisplayChunksInBatches()
+    {
+        // Chunks to load
+        Queue<Vector2Int> chunksToLoad = new Queue<Vector2Int>();
+
+        // Add all chunks to queue
+        foreach (var chunkCoord in terrainDataDictionary.Keys)
+        {
+            chunksToLoad.Enqueue(chunkCoord);
+        }
+
+        while (chunksToLoad.Count > 0)
+        {
+            // Load 1-2 chunks per frame
+            for (int i = 0; i < 2 && chunksToLoad.Count > 0; i++)
+            {
+                Vector2Int chunkCoord = chunksToLoad.Dequeue();
+                DisplayChunks(chunkCoord, 5);  // Display in high quality (LOD = 5)
+
+                // Optional: You can add a small delay to further control the batch size
+                yield return null;
+            }
+
+            // Wait until the next frame to process more chunks
+            yield return null;
+        }
+
+        Debug.Log("All chunks have been loaded.");
+    }
+
+
     private IEnumerator CheckPlayerChunkPos() // Update chunks if player moves to new chunk
     {
         while (player == null)
@@ -182,17 +239,10 @@ public class MeshGenerator : MonoBehaviour
         }
 
         HashSet<Vector2Int> newLoadedChunks = new HashSet<Vector2Int>();
-        List<Vector2Int> lowDetailChunks = new List<Vector2Int>();
 
         // newLoadedChunks -> Which chunks should be loaded
         // loadedChunks -> Which chunks are currently loaded
         // lowDetailChunks -> Chunks to be combined
-
-        foreach (var LargeChunk in LargeChunks)
-        {
-            UnloadLargeChunk(LargeChunk);
-        }
-        LargeChunks.Clear();
 
         Rect playerBounds = new Rect(playerChunkCoord.x * chunkSize - loadRadius * chunkSize, playerChunkCoord.y * chunkSize - loadRadius * chunkSize, loadRadius * 2 * chunkSize, loadRadius * 2 * chunkSize);
         List<Vector2Int> nearbyChunks = quadtree.Retrieve(new List<Vector2Int>(), playerBounds);
@@ -200,11 +250,9 @@ public class MeshGenerator : MonoBehaviour
         // Load and Unload chunks around player
         foreach (var chunkCoord in nearbyChunks)
         {
-
             // Check if the chunk is within a circular radius
             if ((chunkCoord - playerChunkCoord).sqrMagnitude > loadRadius * loadRadius)
                 continue;
-
 
             newLoadedChunks.Add(chunkCoord);
 
@@ -233,21 +281,12 @@ public class MeshGenerator : MonoBehaviour
                 }
 
 
-                int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance, LOD = 1-4 (close) to LOD = 4+ (far)
+                int lod = Mathf.Clamp((int)lodDistance, 1, (int)Mathf.Log(chunkSize, 2.0f) + 1); // Set LOD based on distance
 
                 // Create New Chunk
                 if (!loadedChunks.Contains(chunkCoord))
                 {
-                    DisplayChunks(new List<Vector2Int> { chunkCoord }, lod);
-                    //if (lod < 6)
-                    //{
-                    //    DisplayChunks(new List<Vector2Int> { chunkCoord }, lod);
-                    //}
-                    //else
-                    //{
-                    //    //Debug.Log("Chunk is too far away: " + chunkCoord);
-                    //    lowDetailChunks.Add(chunkCoord);
-                    //}
+                    DisplayChunks(chunkCoord, lod);
                 }
 
                 // Update Existing Chunk if LOD has changed
@@ -256,53 +295,32 @@ public class MeshGenerator : MonoBehaviour
                     if (lod != meshData.lod)
                     {
                         meshData.lod = lod;
-                        UpdateChunkLOD(chunkCoord.x, chunkCoord.y, lod);
+                        chunksToUpdate.Add(chunkCoord);
                     }
-                    //else
-                    //{
-                    //    if (lod == 6)
-                    //    {
-                    //        lowDetailChunks.Add(chunkCoord);
-                    //    }
-                    //}
                 }
             }
         }
 
-        // Combine and display low detail chunks
-        if (lowDetailChunks.Count() > 0)
-        {
-            DisplayChunks(lowDetailChunks, (int)Mathf.Log(chunkSize, 2.0f) + 1);
-            foreach (var chunk in lowDetailChunks)
-            {
-                //Debug.Log("Unloading chunk: " + chunk);
-                UnloadChunk(chunk.x, chunk.y);
-            }
-        }
-
+        // Check loaded chunks to see if they should still be loaded
         foreach (var chunk in loadedChunks.ToList())
         {
             if (!newLoadedChunks.Contains(chunk))
             {
-                //Debug.Log("Unloading chunk: " + chunk);
                 UnloadChunk(chunk.x, chunk.y);
             }
         }
 
-        loadedChunks = newLoadedChunks;
-
-        lowDetailChunks.Clear();
-        
+        loadedChunks = newLoadedChunks;        
     }
 
     public void UpdateChunkLOD(int x, int z, int lod)
     {
         UnloadChunk(x, z);
 
-        DisplayChunks(new List<Vector2Int> { new Vector2Int(x, z) }, lod);
+        DisplayChunks(new Vector2Int(x, z), lod);
     }
 
-    public void DisplayChunks(List<Vector2Int> chunkCoords, int lod)
+    public void DisplayChunks(Vector2Int chunkCoord, int lod)
     {
         List<Vector3> combinedVertices = new List<Vector3>();
         List<Vector2> combinedUVs = new List<Vector2>();
@@ -310,37 +328,26 @@ public class MeshGenerator : MonoBehaviour
 
         int vertexOffset = 0;
 
-        //foreach (var chunk in chunkCoords){
-        //    Debug.Log("X: " + chunk.x + ". Z: " + chunk.y);
-        //}
-
-        
-
-        foreach (var chunkCoord in chunkCoords)
+        if (terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
         {
-            if (terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
+            // Apply LOD to mesh data
+            var (reducedVertices, reducedUVs) = ApplyLOD(meshData.vertices, meshData.uvs, lod);
+            int[] reducedTriangles = ApplyLODToTriangles(meshData.triangles, lod);
+
+            combinedVertices.AddRange(reducedVertices);
+            combinedUVs.AddRange(reducedUVs);
+
+            for (int i = 0; i < reducedTriangles.Length; i++)
             {
-                // Apply LOD to mesh data
-                var (reducedVertices, reducedUVs) = ApplyLOD(meshData.vertices, meshData.uvs, lod);
-                int[] reducedTriangles = ApplyLODToTriangles(meshData.triangles, lod);
-
-                combinedVertices.AddRange(reducedVertices);
-                combinedUVs.AddRange(reducedUVs);
-
-                for (int i = 0; i < reducedTriangles.Length; i++)
-                {
-                    combinedTriangles.Add(reducedTriangles[i] + vertexOffset);
-                }
-
-                vertexOffset += reducedVertices.Length;
+                combinedTriangles.Add(reducedTriangles[i] + vertexOffset);
             }
-            else
-            {
-                Debug.LogError("Chunk data not found for position: " + chunkCoord);
-            }
+
+            vertexOffset += reducedVertices.Length;
         }
-
-        
+        else
+        {
+            Debug.LogError("Chunk data not found for position: " + chunkCoord);
+        }
 
         Mesh combinedMesh = new Mesh();
         combinedMesh.vertices = combinedVertices.ToArray();
@@ -348,27 +355,17 @@ public class MeshGenerator : MonoBehaviour
         combinedMesh.triangles = combinedTriangles.ToArray();
         combinedMesh.RecalculateNormals();
 
+        // Create Chunk GameObject
+        GameObject chunk;
+        chunk = new GameObject($"TerrainChunk_{chunkCoord.x}_{chunkCoord.y}");
 
-        
-        // Create Chunks GameObject
-        GameObject combinedChunk;
-        if (chunkCoords.Count() > 1)
-        {
-            combinedChunk = new GameObject($"Combined_TerrainChunk_{chunkCoords[0].x}_{chunkCoords[0].y}");
-            LargeChunks.Add(combinedChunk);
-        }
-        else
-        {
-            combinedChunk = new GameObject($"TerrainChunk_{chunkCoords[0].x}_{chunkCoords[0].y}");
-        }
-        
-        combinedChunk.AddComponent<MeshFilter>().mesh = combinedMesh;
-        var meshRenderer = combinedChunk.AddComponent<MeshRenderer>();
+        chunk.AddComponent<MeshFilter>().mesh = combinedMesh;
+        var meshRenderer = chunk.AddComponent<MeshRenderer>();
 
-        meshRenderer.material = newMaterial;
-        combinedChunk.transform.SetParent(terrainManager.transform);
-        combinedChunk.layer = LayerMask.NameToLayer("Ground");
-        combinedChunk.AddComponent<MeshCollider>().sharedMesh = combinedMesh;
+        meshRenderer.material = terrainMaterial;
+        chunk.transform.SetParent(terrainManager.transform);
+        chunk.layer = LayerMask.NameToLayer("Ground");
+        chunk.AddComponent<MeshCollider>().sharedMesh = combinedMesh;
     }
 
     public void UnloadChunk(int x, int z)
@@ -379,14 +376,6 @@ public class MeshGenerator : MonoBehaviour
         if (chunk != null)
         {
             Destroy(chunk);
-        }
-    }
-    public void UnloadLargeChunk(GameObject LargeChunk)
-    {
-
-        if (LargeChunk != null)
-        {
-            Destroy(LargeChunk);
         }
     }
 

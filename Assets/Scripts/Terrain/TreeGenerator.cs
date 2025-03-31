@@ -13,13 +13,11 @@ public class TreeGenerator : MonoBehaviour
     public float forestSize = 0.5f;
     public int treeDensity = 6;
     public float treeFrequency = 100f;
-    public float treeRadius = 1000f;
     private GameObject player;
     public GameObject treePrefab;
     public GameObject treeParent;
 
     public MeshGenerator meshGenerator;
-    public TreePool TreePool;
 
     private float treeUpdateInterval = 0.5f; // Update every 0.5 seconds
     private float nextTreeUpdateTime = 0f;
@@ -179,75 +177,75 @@ public class TreeGenerator : MonoBehaviour
 
 
 
-    private void UpdateTreeQueue()
-    {
-        if (player == null)
-        {
-            Debug.LogWarning("Player reference is not set!");
-            return;
-        }
+    //private void UpdateTreeQueue()
+    //{
+    //    if (player == null)
+    //    {
+    //        Debug.LogWarning("Player reference is not set!");
+    //        return;
+    //    }
 
-        Vector3 playerPos = player.transform.position;
+    //    Vector3 playerPos = player.transform.position;
 
-        foreach (var kvp in TreeData)
-        {
-            Vector3 position = kvp.Key;
+    //    foreach (var kvp in TreeData)
+    //    {
+    //        Vector3 position = kvp.Key;
 
-            if (!loadedPositions.Contains(position) && (position - playerPos).sqrMagnitude <= treeRadius * treeRadius)
-            {
-                treeQueue.Enqueue(position); // Add to the queue
-                loadedPositions.Add(position); // Mark as loaded
-            }
-        }
-    }
+    //        if (!loadedPositions.Contains(position) && (position - playerPos).sqrMagnitude <= treeRadius * treeRadius)
+    //        {
+    //            treeQueue.Enqueue(position); // Add to the queue
+    //            loadedPositions.Add(position); // Mark as loaded
+    //        }
+    //    }
+    //}
 
-    private void LoadTreeBatch()
-    {
-        int treesToInstantiate = Mathf.Min(maxTreesPerFrame, treeQueue.Count); // Limit batch size
+    //private void LoadTreeBatch()
+    //{
+    //    int treesToInstantiate = Mathf.Min(maxTreesPerFrame, treeQueue.Count); // Limit batch size
 
-        for (int i = 0; i < treesToInstantiate; i++)
-        {
-            if (treeQueue.TryDequeue(out Vector3 treePosition))
-            {
-                Quaternion treeRotation = TreeData[treePosition];
-                GameObject tree = TreePool.GetTree(treePosition, treeRotation); // Get tree from the pool
-                ActiveTrees[treePosition] = tree; // Track instantiated trees
-            }
-        }
-    }
+    //    for (int i = 0; i < treesToInstantiate; i++)
+    //    {
+    //        if (treeQueue.TryDequeue(out Vector3 treePosition))
+    //        {
+    //            Quaternion treeRotation = TreeData[treePosition];
+    //            GameObject tree = TreePool.GetTree(treePosition, treeRotation); // Get tree from the pool
+    //            ActiveTrees[treePosition] = tree; // Track instantiated trees
+    //        }
+    //    }
+    //}
 
-    private void UnloadTreesOutsideRadius()
-    {
-        if (player == null)
-        {
-            Debug.LogWarning("Player reference is not set!");
-            return;
-        }
+    //private void UnloadTreesOutsideRadius()
+    //{
+    //    if (player == null)
+    //    {
+    //        Debug.LogWarning("Player reference is not set!");
+    //        return;
+    //    }
 
-        Vector3 playerPos = player.transform.position;
-        List<Vector3> treesToUnload = new List<Vector3>();
+    //    Vector3 playerPos = player.transform.position;
+    //    List<Vector3> treesToUnload = new List<Vector3>();
 
-        // Find trees to unload
-        foreach (var kvp in ActiveTrees)
-        {
-            Vector3 position = kvp.Key;
-            GameObject tree = kvp.Value;
+    //    // Find trees to unload
+    //    foreach (var kvp in ActiveTrees)
+    //    {
+    //        Vector3 position = kvp.Key;
+    //        GameObject tree = kvp.Value;
 
-            // Check if the tree is outside the radius
-            if ((position - playerPos).sqrMagnitude > treeRadius * treeRadius)
-            {
-                Destroy(tree); // Destroy the GameObject
-                treesToUnload.Add(position); // Mark the position for removal
-            }
-        }
+    //        // Check if the tree is outside the radius
+    //        if ((position - playerPos).sqrMagnitude > treeRadius * treeRadius)
+    //        {
+    //            Destroy(tree); // Destroy the GameObject
+    //            treesToUnload.Add(position); // Mark the position for removal
+    //        }
+    //    }
 
-        // Clean up the dictionary and loaded positions
-        foreach (Vector3 position in treesToUnload)
-        {
-            ActiveTrees.Remove(position); // Remove from the ActiveTrees dictionary
-            loadedPositions.Remove(position); // Remove from the loadedPositions set
-        }
-    }
+    //    // Clean up the dictionary and loaded positions
+    //    foreach (Vector3 position in treesToUnload)
+    //    {
+    //        ActiveTrees.Remove(position); // Remove from the ActiveTrees dictionary
+    //        loadedPositions.Remove(position); // Remove from the loadedPositions set
+    //    }
+    //}
 
     public void AddAllTreesToScene()
     {

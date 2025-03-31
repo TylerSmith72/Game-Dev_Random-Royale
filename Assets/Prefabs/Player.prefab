@@ -197,7 +197,7 @@ MonoBehaviour:
   playerCam: {fileID: 0}
   visor: {fileID: 1054697917607789401}
   playerModel: {fileID: 4780353276054860749}
-  walkspeed: 50
+  walkspeed: 300
   turningSpeed: 1
   gravity: 9.81
 --- !u!114 &5516940546119436445

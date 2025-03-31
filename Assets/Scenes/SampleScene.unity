@@ -937,7 +937,7 @@ MonoBehaviour:
   octaves: 4
   persistence: 0.4
   lacunarity: 2
-  newMaterial: {fileID: 2100000, guid: c6369a11a4b7dfb4082bacb4d16befd5, type: 2}
+  terrainMaterial: {fileID: 2100000, guid: c6369a11a4b7dfb4082bacb4d16befd5, type: 2}
   terrainManager: {fileID: 964517098}
   player: {fileID: 0}
   loadRadius: 25
@@ -981,16 +981,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b3c0a3e47f4fa43aa517fe2f03aac4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xSize: 2048
-  zSize: 2048
-  forestSize: 0.6
+  xSize: 4096
+  zSize: 4096
+  forestSize: 0.5
   treeDensity: 8
   treeFrequency: 2000
-  treeRadius: 150
   treePrefab: {fileID: 6117071349010126079, guid: d250af4848f51154f9a2bf6a85b60ac2, type: 3}
   treeParent: {fileID: 229264429}
   meshGenerator: {fileID: 964517101}
-  TreePool: {fileID: 964517105}
 --- !u!114 &964517105
 MonoBehaviour:
   m_ObjectHideFlags: 0
