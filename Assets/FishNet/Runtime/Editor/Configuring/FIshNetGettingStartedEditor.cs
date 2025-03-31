@@ -94,24 +94,7 @@ namespace FishNet.Editing
 
         private void OnGUI()
         {
-            if (_labelStyle == null)
-            {
-                _labelStyle = new GUIStyle("label");
-                _labelStyle.fontSize = 24;
-                _labelStyle.wordWrap = true;
-                _labelStyle.normal.textColor = new Color32(74, 195, 255, 255);
-            }
 
-            if (_reviewButtonStyle == null)
-            {
-                _reviewButtonStyle = new GUIStyle("button");
-                _reviewButtonStyle.fontSize = 18;
-                _reviewButtonStyle.fontStyle = FontStyle.Bold;
-                _reviewButtonStyle.normal.background = _reviewButtonBg;
-                _reviewButtonStyle.hover.background = _reviewButtonBgHover;
-                _reviewButtonStyle.alignment = TextAnchor.MiddleCenter;
-                _reviewButtonStyle.normal.textColor = new Color(1, 1, 1, 1);
-            }
 
             GUILayout.Box(_fishnetLogo, GUILayout.Width(this.position.width), GUILayout.Height(128));
             GUILayout.Space(20);
