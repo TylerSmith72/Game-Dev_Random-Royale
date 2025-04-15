@@ -6,143 +6,46 @@ using Unity.VisualScripting;
 
 public class PlayerMovement : NetworkBehaviour
 {
-    public Transform orientation;
-    public Transform camPos;
-    public MeshGenerator TerrainManager;
-    public MoveCam camController;
-    public PlayerCam playerCam;
-    public GameObject visor;
     public GameObject playerModel;
+    public GameObject visor;
 
-    [Header("References")]
-    private CharacterController controller;
+    public PlayerCam playerCam;
+    public CharacterController controller;
 
-    [Header("Movement Settings")]
-    [SerializeField] private float walkspeed = 5f;
-    [SerializeField] private float turningSpeed = 1f;
-    [SerializeField] private float gravity = 9.81f;
+    public float speed = 12f;
+    public float gravity = -9.81f;
 
-    private float verticalVelocity;
+    public Transform groundCheck;
+    public float groundDistance = 0.4f;
+    public LayerMask groundMask;
 
-    [Header("Input")]
-    private float moveInput;
-    private float turnInput;
+    Vector3 velocity;
+    bool isGrounded;
 
     private void Start()
     {
-        TerrainManager = GetComponent<MeshGenerator>();
-        controller = GetComponent<CharacterController>();
+
     }
 
     private void Update()
     {
-        InputManagement();
-        Movement();
-    }
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
 
-    private void Movement()
-    {
-        GroundMovement();
-        Turn();
-    }
-
-    private void GroundMovement()
-    {
-        Vector3 move = new Vector3(turnInput, 0, moveInput);
-        move = transform.TransformDirection(move);
-
-        move *= walkspeed;
-
-        move.y = VerticalForceCalculation();
-
-        controller.Move(move * Time.deltaTime);
-    }
-
-    private void Turn()
-    {
-        if (playerCam == null)
+        if (isGrounded && velocity.y < 0)
         {
-            Debug.Log("PlayerCam not loaded yet...");
-            return;
+            velocity.y = -2f;
         }
 
-        Vector3 lookDirection = playerCam.transform.forward;
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
 
-        lookDirection.y = 0;
+        Vector3 move = transform.right * x + transform.forward * z;
 
-        if (lookDirection.magnitude > 0.1f)
-        {
-            transform.rotation = Quaternion.LookRotation(lookDirection);
-        }
-    }
+        controller.Move(move * speed * Time.deltaTime);
 
-    private float VerticalForceCalculation()
-    {
-        if (controller.isGrounded)
-        {
-            verticalVelocity = -1f;
-        }
-        else
-        {
-            verticalVelocity -= gravity * Time.deltaTime;
-        }
-        return verticalVelocity;
-    }
+        velocity.y += gravity * Time.deltaTime;
 
-    private void InputManagement()
-    {
-        moveInput = Input.GetAxis("Vertical");
-        turnInput = Input.GetAxis("Horizontal");
-    }
-
-    private void SetPlayerForAll()
-    {
-        // Find and assign PlayerCam
-        if (playerCam == null)
-        {
-            playerCam = FindObjectOfType<PlayerCam>();
-            if (playerCam == null)
-            {
-                Debug.LogError("PlayerCam not found in the scene!");
-                return;
-            }
-        }
-        playerCam.SetOrientation(orientation);
-
-        // Find and assign CameraController
-        if (camController == null)
-        {
-            camController = FindObjectOfType<MoveCam>();
-            if (camController == null)
-            {
-                Debug.LogError("CameraController (MoveCam) not found in the scene!");
-                return;
-            }
-        }
-        camController.SetPlayer(camPos);
-
-        // Find and assign TerrainManager
-        if (TerrainManager == null)
-        {
-            TerrainManager = FindObjectOfType<MeshGenerator>();
-            if (TerrainManager == null)
-            {
-                Debug.LogError("TerrainManager (MeshGenerator) not found in the scene!");
-                return;
-            }
-        }
-        TerrainManager.SetPlayer(gameObject);
-
-        // Find and assign TreeGenerator
-        TreeGenerator treeGen = TerrainManager.GetComponent<TreeGenerator>();
-        if (treeGen != null)
-        {
-            treeGen.SetPlayer(gameObject);
-        }
-        else
-        {
-            Debug.LogError("TreeGenerator component not found on TerrainManager!");
-        }
+        controller.Move(velocity * Time.deltaTime);
     }
 
     private void DisablePlayerModel()
@@ -151,18 +54,18 @@ public class PlayerMovement : NetworkBehaviour
         visor.GetComponent<MeshRenderer>().enabled = false;
     }
 
-    public override void OnStartClient()
-    {
-        base.OnStartClient();
-        if (base.IsOwner)
-        {
-            Debug.Log("Player is owner");
-            DisablePlayerModel();
-            SetPlayerForAll();
-        }
-        else
-        {
-            gameObject.GetComponent<PlayerMovement>().enabled = false;
-        }
-    }
+    //public override void OnStartClient()
+    //{
+    //    base.OnStartClient();
+    //    if (base.IsOwner)
+    //    {
+    //        Debug.Log("Player is owner");
+    //        DisablePlayerModel();
+    //    }
+    //    else
+    //    {
+    //        gameObject.GetComponent<PlayerMovement>().enabled = false;
+    //        gameObject.GetComponent<CharacterController>().enabled = false;
+    //    }
+    //}
 }

@@ -17,8 +17,12 @@ public class SeedGenerator : MonoBehaviour
         SetSeed(joined);
 
         SetSeed("awedsxdfrtfvghbjkmkl"); // For Testing
+        //SetSeed("banana");
 
-        StartCoroutine(WaitForPlayerAndStartTerrain());
+        MeshGenerator meshGenerator = gameObject.GetComponent<MeshGenerator>();
+        meshGenerator.StartTerrain();
+
+        //StartCoroutine(WaitForPlayerAndStartTerrain());
     }
 
     private IEnumerator WaitForPlayerAndStartTerrain()
