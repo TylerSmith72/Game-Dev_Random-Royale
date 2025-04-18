@@ -64,9 +64,41 @@ public class MeshGenerator : MonoBehaviour
             }            
         }
     }
+    public void ClearTerrainChunks()
+    {
+        Debug.Log("Clearing terrain chunks...");
+
+        // Destroy all GameObjects named "TerrainChunk_{x}_{z}"
+        foreach (Transform child in transform)
+        {
+            if (child.gameObject.name.StartsWith("TerrainChunk_"))
+            {
+                Destroy(child.gameObject);
+            }
+        }
+
+        // Ensure terrainDataDictionary exists before clearing it
+        if (terrainDataDictionary != null)
+        {
+            terrainDataDictionary.Clear();
+        }
+
+        if (chunksToUpdate != null)
+        {
+            chunksToUpdate.Clear();
+        }
+
+        // Find and clear all children under the "Trees" GameObject
+        Transform trees = transform.Find("Trees"); // Find the "Trees" GameObject
+        Destroy(trees.gameObject); // Destroy the "Trees" GameObject and all its children
+
+    }
+
 
     public void StartTerrain()
     {
+        ClearTerrainChunks();
+
         seedString = gameObject.GetComponent<SeedGenerator>().GetSeed();
         //quadtree = new Quadtree<Vector2Int>(0, new Rect(-xSize / 2, -zSize / 2, xSize, zSize));
 

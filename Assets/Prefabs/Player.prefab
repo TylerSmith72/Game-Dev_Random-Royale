@@ -195,8 +195,9 @@ MonoBehaviour:
   visor: {fileID: 1054697917607789401}
   playerCam: {fileID: 4018231216139285853}
   controller: {fileID: 3024901456955191634}
-  speed: 30
+  speed: 20
   gravity: -19.62
+  jumpHeight: 1.2
   groundCheck: {fileID: 5348330560825066753}
   groundDistance: 0.4
   groundMask:

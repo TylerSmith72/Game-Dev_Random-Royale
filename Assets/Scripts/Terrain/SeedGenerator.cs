@@ -1,50 +1,88 @@
 using System.Collections;
 using System.Collections.Generic;
+using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using UnityEngine;
 
 
-public class SeedGenerator : MonoBehaviour
+public class SeedGenerator : NetworkBehaviour
 {
     private Dictionary<int, string> wordDictionary = new Dictionary<int, string>();
     private string seed;
 
-    private void Awake()
+    public void Awake()
     {
         PopulateDictionary();
+    }
 
+    private void Update()
+    {
+        if (IsServerStarted && Input.GetKeyDown(KeyCode.L)) // Ensure server has started
+        {
+            GenerateSeed();
+        }
+    }
+
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+        GenerateSeed(); // Only the server should generate the seed
+    }
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+
+        if (!IsOwner) // Ensure only new clients get the seed
+        {
+            RequestSeedFromServer();
+        }
+    }
+
+    // Ask the server to send the current seed
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestSeedFromServer()
+    {
+        SendSeedToClients(seed);
+    }
+
+    private void GenerateSeed()
+    {
         List<string> selectedWords = GetRandomWords(3);
         string joined = string.Join("", selectedWords);
         SetSeed(joined);
 
-        SetSeed("awedsxdfrtfvghbjkmkl"); // For Testing
-        //SetSeed("banana");
+        //SetSeed("awedsxdfrtfvghbjkmkl"); // For Testing
 
-        MeshGenerator meshGenerator = gameObject.GetComponent<MeshGenerator>();
-        meshGenerator.StartTerrain();
-
-        //StartCoroutine(WaitForPlayerAndStartTerrain());
-    }
-
-    private IEnumerator WaitForPlayerAndStartTerrain()
-    {
-        MeshGenerator meshGenerator = gameObject.GetComponent<MeshGenerator>();
-
-        // Wait until the player is assigned
-        while (meshGenerator.player == null)
+        if (IsServerStarted) // Only server should send the RPC
         {
-            Debug.LogWarning("Waiting for player assignment in MeshGenerator...");
-            yield return null; // Wait for the next frame
+            SetSeedServerRpc(joined);
         }
-
-        // Once the player is assigned, start terrain generation
-        Debug.Log("Player assigned. Starting terrain generation...");
-        meshGenerator.StartTerrain();
     }
 
-    public void SetSeed(string seed)
+    [ServerRpc(RequireOwnership = false)]
+    public void SetSeedServerRpc(string newSeed)
     {
-        Debug.Log("Set seed to: "+ seed);
-        this.seed = seed;
+        seed = newSeed;
+        SendSeedToClients(newSeed);
+    }
+
+    [ObserversRpc]
+    private void SendSeedToClients(string newSeed)
+    {
+        SetSeed(newSeed);
+        ReloadTerrain();
+    }
+
+    public void SetSeed(string newSeed)
+    {
+        Debug.Log("Set seed to: "+ newSeed);
+        seed = newSeed;
+    }
+    private void ReloadTerrain()
+    {
+        Debug.Log("Reloading terrain with new seed: " + seed);
+        MeshGenerator meshGenerator = GetComponent<MeshGenerator>();
+        meshGenerator.StartTerrain(); // Ensure terrain regenerates
     }
 
     public string GetSeed()

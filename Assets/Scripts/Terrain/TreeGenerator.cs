@@ -15,7 +15,7 @@ public class TreeGenerator : MonoBehaviour
     public float treeFrequency = 100f;
     private GameObject player;
     public GameObject treePrefab;
-    public GameObject treeParent;
+    //public Transform treeParent;
 
     public MeshGenerator meshGenerator;
 
@@ -53,6 +53,9 @@ public class TreeGenerator : MonoBehaviour
 
     public void StartTreeGeneration(string seedString)
     {
+        // Clear previous positions
+        TreeData.Clear();
+
         // Generate all tree positions
         float seed = GetSeedFromString(seedString);
         GenerateTreeData(seed);
@@ -256,6 +259,9 @@ public class TreeGenerator : MonoBehaviour
             return;
         }
 
+        GameObject TreesContainer = new GameObject("Trees"); // Create a new "Trees" GameObject
+        TreesContainer.transform.SetParent(transform); // Set the parent to the current GameObject
+
         // Loop through each tree data and instantiate the trees
         foreach (var kvp in TreeData)
         {
@@ -263,7 +269,7 @@ public class TreeGenerator : MonoBehaviour
             Quaternion treeRotation = kvp.Value;
 
             // Instantiate tree at the position with the rotation and parent it to treeParent
-            GameObject tree = Instantiate(treePrefab, treePosition, treeRotation, treeParent.transform);
+            GameObject tree = Instantiate(treePrefab, treePosition, treeRotation, TreesContainer.transform);
             //GameObject tree = TreePool.GetTree(treePosition, treeRotation);
 
             // Add to the ActiveTrees dictionary to track instantiated trees

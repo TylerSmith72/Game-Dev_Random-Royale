@@ -3,9 +3,9 @@ using UnityEngine;
 public class OrbitCamera : MonoBehaviour
 {
     public Transform target;
-    public float orbitSpeed = 10f;
-    public float height = 5f;
-    public float radius = 10f;
+    public float orbitSpeed = 0.2f;
+    public float height = 30f;
+    public float radius = 40f;
 
     private float angle = 0f;
 
