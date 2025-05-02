@@ -13,7 +13,7 @@ public class MeshGenerator : MonoBehaviour
     public int zSize = 4096;
     public float scale = 2000f;
     public float heightFactor = 1200f;
-    public string seedString = "default";
+    public string seedString = null;
     public float vertexSpacing = 4f;
 
     [Header("Fractal Perlin Noise")]
@@ -35,8 +35,10 @@ public class MeshGenerator : MonoBehaviour
     private HashSet<Vector2Int> loadedChunks;
     private List<Vector2Int> chunksToUpdate;
     private int batchSize = 1;
+    private bool isClearing = false;
 
     private bool hasGeneratedData = false;
+    public bool hasLoadedTerrain = false;
 
     private float playerFOV = 90f;
 
@@ -46,7 +48,7 @@ public class MeshGenerator : MonoBehaviour
         Debug.Log("Player set for MeshGenerator: " + player.name);
     }
 
-    public void Start()
+    public void Awake()
     {
         chunksToUpdate = new List<Vector2Int>();
     }
@@ -66,6 +68,8 @@ public class MeshGenerator : MonoBehaviour
     }
     public void ClearTerrainChunks()
     {
+        isClearing = true; 
+
         Debug.Log("Clearing terrain chunks...");
 
         // Destroy all GameObjects named "TerrainChunk_{x}_{z}"
@@ -92,14 +96,25 @@ public class MeshGenerator : MonoBehaviour
         Transform trees = transform.Find("Trees"); // Find the "Trees" GameObject
         Destroy(trees.gameObject); // Destroy the "Trees" GameObject and all its children
 
+        isClearing = false;
+        Debug.Log("All terrain chunks cleared.");
     }
 
 
     public void StartTerrain()
     {
+        hasLoadedTerrain = false;
         ClearTerrainChunks();
 
-        seedString = gameObject.GetComponent<SeedGenerator>().GetSeed();
+        if (seedString == null)
+        {
+            seedString = "default";
+        }
+        else
+        {
+            seedString = gameObject.GetComponent<SeedGenerator>().GetSeed();
+        }
+
         //quadtree = new Quadtree<Vector2Int>(0, new Rect(-xSize / 2, -zSize / 2, xSize, zSize));
 
         GenerateTerrain();
@@ -108,7 +123,7 @@ public class MeshGenerator : MonoBehaviour
 
         if (hasGeneratedData)
         {
-            Debug.Log("Generating terrain...");
+            Debug.Log("Generating terrain with seed: " + seedString);
             //StartCoroutine(CheckPlayerChunkPos());
             // Load all chunks in high quality
             StartCoroutine(DisplayChunksInBatches());
@@ -212,6 +227,8 @@ public class MeshGenerator : MonoBehaviour
             chunksToLoad.Enqueue(chunkCoord);
         }
 
+        //Debug.Log(chunksToLoad.Count + " chunks to load.");
+
         while (chunksToLoad.Count > 0)
         {
             // Load 1-2 chunks per frame
@@ -219,15 +236,17 @@ public class MeshGenerator : MonoBehaviour
             {
                 Vector2Int chunkCoord = chunksToLoad.Dequeue();
                 DisplayChunks(chunkCoord, 2);  // Display in high quality (LOD = 5)
+                //Debug.Log(chunksToLoad.Count);
 
                 // Optional: You can add a small delay to further control the batch size
-                yield return null;
+                //yield return null;
             }
 
             // Wait until the next frame to process more chunks
             yield return null;
         }
 
+        hasLoadedTerrain = true;
         Debug.Log("All chunks have been loaded.");
     }
 
@@ -375,6 +394,7 @@ public class MeshGenerator : MonoBehaviour
             }
 
             vertexOffset += reducedVertices.Length;
+            
         }
         else
         {

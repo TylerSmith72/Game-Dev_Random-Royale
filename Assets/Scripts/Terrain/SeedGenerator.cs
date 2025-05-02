@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
@@ -7,17 +8,20 @@ using UnityEngine;
 
 public class SeedGenerator : NetworkBehaviour
 {
+    private GameObject player;
+    public GameObject gameManager;
+    public GameObject meshGenerator;
     private Dictionary<int, string> wordDictionary = new Dictionary<int, string>();
-    private string seed;
+    private string seed = "default";
 
-    public void Awake()
+    void Awake()
     {
         PopulateDictionary();
     }
 
     private void Update()
     {
-        if (IsServerStarted && Input.GetKeyDown(KeyCode.L)) // Ensure server has started
+        if (IsServerStarted && Input.GetKeyDown(KeyCode.L))
         {
             GenerateSeed();
         }
@@ -34,24 +38,23 @@ public class SeedGenerator : NetworkBehaviour
 
         if (!IsOwner) // Ensure only new clients get the seed
         {
-            RequestSeedFromServer();
+            RequestSeedFromServer(LocalConnection);
         }
     }
 
     // Ask the server to send the current seed
     [ServerRpc(RequireOwnership = false)]
-    private void RequestSeedFromServer()
+    private void RequestSeedFromServer(NetworkConnection conn)
     {
-        SendSeedToClients(seed);
+        SendSeedToClientTargetRpc(conn, seed);
     }
 
     private void GenerateSeed()
     {
         List<string> selectedWords = GetRandomWords(3);
         string joined = string.Join("", selectedWords);
+        //joined = "default"; // For Testing
         SetSeed(joined);
-
-        //SetSeed("awedsxdfrtfvghbjkmkl"); // For Testing
 
         if (IsServerStarted) // Only server should send the RPC
         {
@@ -66,11 +69,28 @@ public class SeedGenerator : NetworkBehaviour
         SendSeedToClients(newSeed);
     }
 
-    [ObserversRpc]
+    [ObserversRpc] // Send seed to all clients
     private void SendSeedToClients(string newSeed)
     {
+        if (player != null)
+        {
+            player.GetComponent<PlayerSetup>().RespawnPlayer();
+        } else {
+            Debug.Log("Player is null, cannot respawn.");
+        }
+
         SetSeed(newSeed);
         ReloadTerrain();
+    }
+
+    [TargetRpc] // Send seed when new player connects
+    private void SendSeedToClientTargetRpc(NetworkConnection conn, string newSeed)
+    {
+        if(meshGenerator.GetComponent<MeshGenerator>().hasLoadedTerrain == false){
+            SetSeed(newSeed);
+            ReloadTerrain();
+        }
+        
     }
 
     public void SetSeed(string newSeed)
@@ -117,6 +137,7 @@ public class SeedGenerator : NetworkBehaviour
         wordDictionary.Add(23, "Savannah");
         wordDictionary.Add(24, "Geyser");
         wordDictionary.Add(25, "Waterfall");
+        Debug.Log("Word dictionary populated with " + wordDictionary.Count + " words.");
     }
 
     private List<string> GetRandomWords(int count)
@@ -139,5 +160,11 @@ public class SeedGenerator : NetworkBehaviour
         }
 
         return randomWords;
+    }
+
+    public void SetPlayer(GameObject player)
+    {
+        Debug.Log("Setting player in SeedGenerator: " + player);
+        this.player = player;
     }
 }

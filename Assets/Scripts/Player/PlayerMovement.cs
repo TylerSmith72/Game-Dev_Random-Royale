@@ -52,6 +52,12 @@ public class PlayerMovement : NetworkBehaviour
         velocity.y += gravity * Time.deltaTime;
 
         controller.Move(velocity * Time.deltaTime);
+
+        // if (base.IsOwner && gameManager != null && Input.GetKeyDown(KeyCode.R))
+        // {   
+        //     Debug.Log("Respawning player from setup...");
+        //     gameManager.Respawn();
+        // }
     }
 
     private void DisablePlayerModel()
