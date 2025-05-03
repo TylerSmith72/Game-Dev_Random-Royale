@@ -150,6 +150,7 @@ GameObject:
   - component: {fileID: 6891898447627736473}
   - component: {fileID: 3024901456955191634}
   - component: {fileID: 1852848106966550427}
+  - component: {fileID: 2436888851537384816}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -343,6 +344,25 @@ MonoBehaviour:
   characterController: {fileID: 3024901456955191634}
   playerMovement: {fileID: 7362379869056774226}
   playerCam: {fileID: 4018231216139285853}
+  gameManagerObject: {fileID: 0}
+  terrainManagerObject: {fileID: 0}
+--- !u!114 &2436888851537384816
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2207716433117240785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9753de076c1247a4b8f48be46543e46e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 5516940546119436445}
+  _networkObjectCache: {fileID: 0}
+  maxHealth: 100
+  currentHealth: 0
 --- !u!1 &4780353276054860749
 GameObject:
   m_ObjectHideFlags: 0
