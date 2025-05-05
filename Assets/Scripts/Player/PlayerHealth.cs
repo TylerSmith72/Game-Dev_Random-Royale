@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using FishNet.Object;
+using TMPro;
 
 public class PlayerHealth : NetworkBehaviour
 {
@@ -9,6 +11,12 @@ public class PlayerHealth : NetworkBehaviour
     private int maxHealth = 100;
     [SerializeField]
     private int currentHealth;
+    [SerializeField]
+    private Slider healthSlider;
+    [SerializeField]
+    private TextMeshProUGUI healthText;
+    [SerializeField]
+    private Canvas canvas;
 
     public static List<PlayerHealth> AlivePlayers = new List<PlayerHealth>();
 
@@ -19,6 +27,7 @@ public class PlayerHealth : NetworkBehaviour
         if (!base.IsOwner)
         {
             GetComponent<PlayerHealth>().enabled = false;
+            canvas.enabled = false;
         }
     }
 
@@ -29,6 +38,17 @@ public class PlayerHealth : NetworkBehaviour
         if (IsServerInitialized)
         {
             AlivePlayers.Add(this);
+        }
+
+        if (healthSlider != null)
+        {
+            healthSlider.maxValue = maxHealth;
+            healthSlider.value = currentHealth;
+        }
+
+        if (healthText != null)
+        {
+            healthText.text = $"{currentHealth}";
         }
     }
 
@@ -73,6 +93,17 @@ public class PlayerHealth : NetworkBehaviour
     private void UpdateHealthClient(int newHealth)
     {
         currentHealth = newHealth;
+
+        if (healthSlider != null)
+        {
+            healthSlider.value = currentHealth;
+        }
+
+        if (healthText != null)
+        {
+            healthText.text = $"{currentHealth}";
+        }
+
         Debug.Log($"Health updated to: {currentHealth}");
     }
 
@@ -134,7 +165,7 @@ public class PlayerHealth : NetworkBehaviour
         {
             rb = gameObject.AddComponent<Rigidbody>();
         }
-        rb.isKinematic = false; // Allow physics simulation
+        rb.isKinematic = false;
         rb.useGravity = true;
 
         CapsuleCollider capsuleCollider = GetComponent<CapsuleCollider>();

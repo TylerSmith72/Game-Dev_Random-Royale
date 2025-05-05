@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2028470415565354925}
   - component: {fileID: 2812287724108380338}
   - component: {fileID: 1394057832663195253}
+  - component: {fileID: 5679250241241645276}
   m_Layer: 0
   m_Name: PT_Pine_Tree_03_green_LOD0
   m_TagString: Untagged
@@ -84,6 +85,29 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &5679250241241645276
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 649165938051307759}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.3
+  m_Height: 10
+  m_Direction: 1
+  m_Center: {x: -0.030776441, y: 4.058229, z: 0.0074507594}
 --- !u!1 &1720328307436147672
 GameObject:
   m_ObjectHideFlags: 0

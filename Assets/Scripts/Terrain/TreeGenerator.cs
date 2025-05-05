@@ -118,7 +118,7 @@ public class TreeGenerator : MonoBehaviour
                             continue;
                         }
 
-                        Vector3 finalTreePosition = new Vector3(offsetPosition.x, groundY, offsetPosition.z);
+                        Vector3 finalTreePosition = new Vector3(offsetPosition.x, groundY - 1f, offsetPosition.z);
 
                         Quaternion treeRotation = GetDeterministicRotation(finalTreePosition, seed);
 
@@ -259,8 +259,8 @@ public class TreeGenerator : MonoBehaviour
             return;
         }
 
-        GameObject TreesContainer = new GameObject("Trees"); // Create a new "Trees" GameObject
-        TreesContainer.transform.SetParent(transform); // Set the parent to the current GameObject
+        GameObject TreesContainer = new GameObject("Trees");
+        TreesContainer.transform.SetParent(transform);
 
         // Loop through each tree data and instantiate the trees
         foreach (var kvp in TreeData)
@@ -270,10 +270,9 @@ public class TreeGenerator : MonoBehaviour
 
             // Instantiate tree at the position with the rotation and parent it to treeParent
             GameObject tree = Instantiate(treePrefab, treePosition, treeRotation, TreesContainer.transform);
-            //GameObject tree = TreePool.GetTree(treePosition, treeRotation);
 
-            // Add to the ActiveTrees dictionary to track instantiated trees
-            //ActiveTrees[treePosition] = tree;
+            float scaleMultiplier = 2.0f;
+            tree.transform.localScale *= scaleMultiplier;
         }
 
         Debug.Log("All trees have been added to the scene.");

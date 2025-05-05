@@ -14,10 +14,10 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 0
-  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_Fog: 1
+  m_FogColor: {r: 0.5019608, g: 0.81960785, b: 0.9411765, a: 1}
   m_FogMode: 3
-  m_FogDensity: 0.01
+  m_FogDensity: 0.0025
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 59573b088aaea0442bf29e0a0e9d1339, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -836,6 +836,7 @@ GameObject:
   - component: {fileID: 868356801}
   - component: {fileID: 868356800}
   - component: {fileID: 868356802}
+  - component: {fileID: 868356803}
   m_Layer: 0
   m_Name: Menu Camera
   m_TagString: Untagged
@@ -933,6 +934,19 @@ MonoBehaviour:
   orbitSpeed: 0.1
   height: 30
   radius: 40
+--- !u!114 &868356803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 868356798}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 016503c5257c0b5409eec50ba0125760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotationSpeed: 10
 --- !u!1 &964517098
 GameObject:
   m_ObjectHideFlags: 0
@@ -1382,6 +1396,7 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 0}
   playerPrefab: {fileID: 2207716433117240785, guid: 0c7c3220cb3dd264dad42ccc5b9063bb, type: 3}
   playerSpawner: {fileID: 835994224}
+  terrainManagerObject: {fileID: 0}
 --- !u!1 &1520228803
 GameObject:
   m_ObjectHideFlags: 0
