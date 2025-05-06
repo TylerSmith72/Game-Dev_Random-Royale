@@ -11,6 +11,11 @@ public class PlayerSetup : NetworkBehaviour
     public GameObject gameManagerObject;
     public GameObject terrainManagerObject;
 
+    [SerializeField]
+    private string localPlayerLayer = "LocalPlayer";
+    [SerializeField]
+    private string remotePlayerLayer = "RemotePlayer";
+
     public void Awake()
     {
 
@@ -70,6 +75,8 @@ public class PlayerSetup : NetworkBehaviour
 
         if (!base.Owner.IsLocalClient) // If not the local client, disable components
         {
+            SetLayerRecursively(gameObject, LayerMask.NameToLayer(remotePlayerLayer));
+
             Debug.Log("Disabling components for non-local client.");
             if (playerCamera != null)
                 playerCamera.enabled = false;
@@ -84,6 +91,19 @@ public class PlayerSetup : NetworkBehaviour
                 playerCam.enabled = false;
 
             enabled = false;
+        } else {
+            SetLayerRecursively(gameObject, LayerMask.NameToLayer(localPlayerLayer));
+        }
+    }
+
+    private void SetLayerRecursively(GameObject obj, int layer)
+    {
+        if (obj == null) return;
+
+        obj.layer = layer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
         }
     }
 

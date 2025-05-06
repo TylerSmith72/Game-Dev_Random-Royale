@@ -1034,11 +1034,11 @@ MonoBehaviour:
   chunkSize: 64
   xSize: 1024
   zSize: 1024
-  scale: 750
-  heightFactor: 1200
+  scale: 450
+  heightFactor: 800
   seedString: default
   vertexSpacing: 4
-  octaves: 4
+  octaves: 8
   persistence: 0.4
   lacunarity: 2
   terrainMaterial: {fileID: 2100000, guid: c6369a11a4b7dfb4082bacb4d16befd5, type: 2}

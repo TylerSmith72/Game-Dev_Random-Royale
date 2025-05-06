@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2812287724108380338}
   - component: {fileID: 1394057832663195253}
   - component: {fileID: 5679250241241645276}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: PT_Pine_Tree_03_green_LOD0
   m_TagString: Untagged
   m_Icon: {fileID: 0}

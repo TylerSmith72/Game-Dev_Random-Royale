@@ -178,6 +178,7 @@ public class PlayerHealth : NetworkBehaviour
         capsuleCollider.height = 2.6f;
         capsuleCollider.center = new Vector3(0, 0, 0);
 
+        capsuleCollider.isTrigger = false;
         capsuleCollider.enabled = true;
 
         Debug.Log("Ragdoll effect enabled.");

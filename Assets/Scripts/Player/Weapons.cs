@@ -9,6 +9,12 @@ public class Weapons : NetworkBehaviour
     private Transform firePoint;
     [SerializeField]
     private int projectileDamage = 10;
+    [SerializeField]
+    private float maxAimDistance = 100f;
+    [SerializeField]
+    private Camera playerCamera;
+    [SerializeField]
+    private LayerMask raycastMask;
 
     private void Update()
     {
@@ -20,13 +26,17 @@ public class Weapons : NetworkBehaviour
 
     private void Shoot()
     {
-        ShootServerRpc();
+        Vector3 aimPoint = GetAimPoint();
+
+        ShootServerRpc(aimPoint);
     }
 
     [ServerRpc]
-    private void ShootServerRpc()
+    private void ShootServerRpc(Vector3 aimPoint)
     {
-        GameObject projectile = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
+        Vector3 direction = (aimPoint - firePoint.position).normalized;
+
+        GameObject projectile = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
 
         Projectile projectileScript = projectile.GetComponent<Projectile>();
         if (projectileScript != null)
@@ -35,5 +45,21 @@ public class Weapons : NetworkBehaviour
         }
 
         Spawn(projectile); // Spawn on all clients
+    }
+
+    private Vector3 GetAimPoint()
+    {
+        Ray ray = playerCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f));
+        if (Physics.Raycast(ray, out RaycastHit hit, maxAimDistance, raycastMask))
+        {
+            Debug.Log("Hit detected at: " + hit.point);
+            return hit.point;
+        }
+        else
+        {
+            // If no hit, return the maximum distance in the direction of the ray
+            Debug.Log("No hit detected, returning max aim distance point.");
+            return ray.origin + ray.direction * maxAimDistance;
+        }
     }
 }
