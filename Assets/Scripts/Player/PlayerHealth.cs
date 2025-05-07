@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using FishNet.Object;
+using FishNet.Connection;
 using TMPro;
 
 public class PlayerHealth : NetworkBehaviour
@@ -18,7 +19,7 @@ public class PlayerHealth : NetworkBehaviour
     [SerializeField]
     private Canvas canvas;
 
-    public static List<PlayerHealth> AlivePlayers = new List<PlayerHealth>();
+    private GameManager gameManager;
 
     public override void OnStartClient()
     {
@@ -35,11 +36,6 @@ public class PlayerHealth : NetworkBehaviour
     {
         currentHealth = maxHealth;
 
-        if (IsServerInitialized)
-        {
-            AlivePlayers.Add(this);
-        }
-
         if (healthSlider != null)
         {
             healthSlider.maxValue = maxHealth;
@@ -50,13 +46,12 @@ public class PlayerHealth : NetworkBehaviour
         {
             healthText.text = $"{currentHealth}";
         }
-    }
 
-    void OnDestroy()
-    {
-        if (IsServerInitialized)
+        // Find the GameManager
+        gameManager = FindObjectOfType<GameManager>();
+        if (gameManager == null)
         {
-            AlivePlayers.Remove(this);
+            Debug.LogError("GameManager not found!");
         }
     }
 
@@ -110,8 +105,12 @@ public class PlayerHealth : NetworkBehaviour
     private void HandleDeath()
     {
         Debug.Log($"{gameObject.name} has died!");
-
-        AlivePlayers.Remove(this);
+        
+        // Notify the GameManager about the death
+        if (gameManager != null && IsServerInitialized)
+        {
+            gameManager.PlayerDied(base.Owner);
+        }
 
         // Call the client-side death logic
         HandleDeathClient();
@@ -145,8 +144,6 @@ public class PlayerHealth : NetworkBehaviour
 
         // Enable ragdoll effect
         EnableRagdoll();
-
-        StartCoroutine(RespawnAfterDelay());
     }
 
     private void EnableRagdoll()
@@ -184,22 +181,5 @@ public class PlayerHealth : NetworkBehaviour
         Debug.Log("Ragdoll effect enabled.");
     }
 
-    private IEnumerator RespawnAfterDelay()
-    {
-        float respawnDelay = 5f;
-        Debug.Log($"Respawning in {respawnDelay} seconds...");
-
-        yield return new WaitForSeconds(respawnDelay);
-
-        PlayerSetup playerSetup = GetComponent<PlayerSetup>();
-        if (playerSetup != null)
-        {
-            Debug.Log("Calling RespawnPlayer from PlayerSetup...");
-            playerSetup.RespawnPlayer();
-        }
-        else
-        {
-            Debug.LogError("PlayerSetup component not found on the player!");
-        }
-    }
+    // We've removed the RespawnAfterDelay coroutine because the GameManager now handles respawning
 }
