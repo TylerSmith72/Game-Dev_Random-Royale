@@ -1,6 +1,8 @@
+using FishNet.Connection;
+using FishNet.Object;
 using UnityEngine;
 
-public class Projectile : MonoBehaviour
+public class Projectile : NetworkBehaviour
 {
     [SerializeField]
     private float speed = 20f;
@@ -44,13 +46,29 @@ public class Projectile : MonoBehaviour
 
     private void OnHit(Collider collider)
     {
-        PlayerHealth playerHealth = collider.GetComponent<PlayerHealth>();
-        if (playerHealth != null)
+        if (IsServerInitialized)
         {
-            playerHealth.UpdateHealth(-damage);
-        }
+            PlayerHealth playerHealth = collider.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.UpdateHealth(-damage);
+            }
 
-        Destroy(gameObject);
+            Despawn(gameObject);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void NotifyServerOfHit(NetworkConnection targetPlayer, int damage)
+    {
+        if (targetPlayer != null)
+        {
+            PlayerHealth playerHealth = targetPlayer.FirstObject.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.UpdateHealth(-damage);
+            }
+        }
     }
 
     public void SetDamage(int damageAmount)

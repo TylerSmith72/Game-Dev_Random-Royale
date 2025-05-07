@@ -70,7 +70,7 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     // Server-side function to update health
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     private void UpdateHealthServer(int newHealth)
     {
         currentHealth = newHealth;
