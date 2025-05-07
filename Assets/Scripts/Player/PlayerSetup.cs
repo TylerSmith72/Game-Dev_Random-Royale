@@ -94,6 +94,7 @@ public class PlayerSetup : NetworkBehaviour
         } else {
             SetLayerRecursively(gameObject, LayerMask.NameToLayer(localPlayerLayer));
         }
+        gameObject.GetComponent<CapsuleCollider>().isTrigger = true;
     }
 
     private void SetLayerRecursively(GameObject obj, int layer)

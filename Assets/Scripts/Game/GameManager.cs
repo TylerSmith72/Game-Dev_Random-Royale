@@ -272,6 +272,7 @@ public class GameManager : NetworkBehaviour
         
         // Set up references
         newPlayer.GetComponent<PlayerSetup>().SetGameManager(gameObject);
+
         if (terrainManagerObject != null)
         {
             terrainManagerObject.GetComponent<SeedGenerator>().SetPlayer(newPlayer);
