@@ -18,6 +18,11 @@ public class Weapons : NetworkBehaviour
 
     private void Update()
     {
+        if(GetComponent<PlayerMenu>().isMenuOpen == true)
+        {
+            return;
+        }
+        
         if (IsOwner && Input.GetMouseButtonDown(0))
         {
             Shoot();

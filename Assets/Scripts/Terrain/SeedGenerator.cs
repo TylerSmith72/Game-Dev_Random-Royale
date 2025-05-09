@@ -86,7 +86,8 @@ public class SeedGenerator : NetworkBehaviour
     [TargetRpc] // Send seed when new player connects
     private void SendSeedToClientTargetRpc(NetworkConnection conn, string newSeed)
     {
-        if(meshGenerator.GetComponent<MeshGenerator>().hasLoadedTerrain == false){
+        // If hasn't loaded terrain OR seed is different, reload terrain
+        if(meshGenerator.GetComponent<MeshGenerator>().hasLoadedTerrain == false || meshGenerator.GetComponent<MeshGenerator>().seedString != newSeed){
             SetSeed(newSeed);
             ReloadTerrain();
         }
