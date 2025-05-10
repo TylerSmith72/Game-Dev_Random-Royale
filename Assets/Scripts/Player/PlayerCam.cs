@@ -21,7 +21,7 @@ public class PlayerCam : MonoBehaviour
 
     private void Update()
     {
-        if(player.GetComponent<PlayerMenu>().isMenuOpen == true)
+        if(player.GetComponent<PlayerMenu>().isMenuOpen == true || player.GetComponent<PlayerMenu>().loadingScreen.activeSelf == true)
         {
             return;
         }

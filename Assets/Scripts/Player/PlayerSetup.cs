@@ -123,11 +123,22 @@ public class PlayerSetup : NetworkBehaviour
         {
             Debug.LogError("GameManager not found on client!");
         }
+
         // Find the GameManager and register this player
         GameObject terrainManager = FindObjectOfType<SeedGenerator>()?.gameObject;
         if (terrainManager != null)
         {
             terrainManager.GetComponent<SeedGenerator>().SetPlayer(gameObject);
+        }
+        else
+        {
+            Debug.LogError("TerrainManager not found on client!");
+        }
+        
+        GameObject meshGenerator = FindObjectOfType<MeshGenerator>()?.gameObject;
+        if (meshGenerator != null)
+        {
+            meshGenerator.GetComponent<MeshGenerator>().SetPlayer(gameObject);
         }
         else
         {

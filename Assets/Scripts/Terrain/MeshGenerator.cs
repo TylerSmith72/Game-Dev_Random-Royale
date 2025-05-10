@@ -27,6 +27,8 @@ public class MeshGenerator : MonoBehaviour
 
     [Header("Player")]
     public GameObject player;
+    private PlayerMenu playerMenu;
+
     Vector2Int lastPlayerChunkCoord = new Vector2Int(0, 0);
     public int loadRadius = 2;
 
@@ -46,6 +48,12 @@ public class MeshGenerator : MonoBehaviour
     {
         player = playerTransform;
         Debug.Log("Player set for MeshGenerator: " + player.name);
+        
+        playerMenu = player.GetComponent<PlayerMenu>();
+        if (playerMenu == null)
+        {
+            Debug.LogError("PlayerMenu script not found on the player!");
+        }
     }
 
     public void Awake()
@@ -104,6 +112,12 @@ public class MeshGenerator : MonoBehaviour
     public void StartTerrain()
     {
         hasLoadedTerrain = false;
+
+        if (playerMenu != null)
+        {
+            playerMenu.ShowLoadingScreen();
+        }
+        
         ClearTerrainChunks();
 
         if (seedString == null)
@@ -218,7 +232,6 @@ public class MeshGenerator : MonoBehaviour
 
     private IEnumerator DisplayChunksInBatches()
     {
-        // Chunks to load
         Queue<Vector2Int> chunksToLoad = new Queue<Vector2Int>();
 
         // Add all chunks to queue
@@ -237,17 +250,18 @@ public class MeshGenerator : MonoBehaviour
                 Vector2Int chunkCoord = chunksToLoad.Dequeue();
                 DisplayChunks(chunkCoord, 2);  // Display in high quality (LOD = 5)
                 //Debug.Log(chunksToLoad.Count);
-
-                // Optional: You can add a small delay to further control the batch size
-                //yield return null;
             }
 
-            // Wait until the next frame to process more chunks
             yield return null;
         }
 
         hasLoadedTerrain = true;
         Debug.Log("All chunks have been loaded.");
+
+        if (playerMenu != null)
+        {
+            playerMenu.HideLoadingScreen();
+        }
     }
 
 

@@ -40,7 +40,7 @@ public class PlayerMovement : NetworkBehaviour
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
 
-        if(GetComponent<PlayerMenu>().isMenuOpen == true)
+        if(GetComponent<PlayerMenu>().isMenuOpen == true || GetComponent<PlayerMenu>().loadingScreen.activeSelf == true)
         {
             return;
         }

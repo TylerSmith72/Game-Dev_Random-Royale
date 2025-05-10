@@ -7,10 +7,12 @@ public class PlayerMenu : NetworkBehaviour
 {
     [SerializeField]
     private GameObject playerMenu;
+    public GameObject loadingScreen;
+    [SerializeField]
+    private Text loadingText;
+
     private Button exitButton;
-
     private NetworkHudCanvases networkHudCanvas;
-
     private GameObject canvas;
     private GameObject mainMenu;
 
@@ -34,10 +36,20 @@ public class PlayerMenu : NetworkBehaviour
         {
             playerMenu.SetActive(false);
         }
+
+        if (loadingScreen != null)
+        {
+            loadingScreen.SetActive(true);
+        }
     }
 
     private void Update()
     {
+        if(loadingScreen.activeSelf == true)
+        {
+            return; // Don't allow any input when loading screen is active
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             ToggleMenu();
@@ -74,5 +86,28 @@ public class PlayerMenu : NetworkBehaviour
             networkHudCanvas.OnClick_Client(); // Leave Client
         }
         mainMenu.SetActive(true);
+    }
+
+    public void ShowLoadingScreen()
+    {
+        Debug.Log("Showing loading screen...");
+        if (loadingScreen != null)
+        {
+            loadingScreen.SetActive(true);
+            if (loadingText != null)
+            {
+                loadingText.text = "Loading Terrain...";
+            }
+        }
+    }
+
+    public void HideLoadingScreen()
+    {
+        Debug.Log("Hiding loading screen...");
+        isMenuOpen = false;
+        if (loadingScreen != null)
+        {
+            loadingScreen.SetActive(false);
+        }
     }
 }
