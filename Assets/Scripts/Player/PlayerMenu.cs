@@ -15,6 +15,7 @@ public class PlayerMenu : NetworkBehaviour
 
     private Button exitButton;
     private NetworkHudCanvases networkHudCanvas;
+    private MeshGenerator meshGenerator;
     private GameObject canvas;
     private GameObject mainMenu;
 
@@ -23,6 +24,7 @@ public class PlayerMenu : NetworkBehaviour
     private void Start()
     {
         networkHudCanvas = FindObjectOfType<NetworkHudCanvases>();
+        meshGenerator = FindObjectOfType<MeshGenerator>();
         canvas = GameObject.Find("Canvas");
 
         if(canvas != null)
@@ -41,7 +43,15 @@ public class PlayerMenu : NetworkBehaviour
 
         if (loadingScreen != null)
         {
-            loadingScreen.SetActive(true);
+            MeshGenerator meshGenerator = FindObjectOfType<MeshGenerator>();
+            if (meshGenerator != null)
+            {
+                if (meshGenerator.hasLoadedTerrain){
+                    HideLoadingScreen();
+                }
+            }
+            
+            ShowLoadingScreen();
         }
     }
 
@@ -49,6 +59,11 @@ public class PlayerMenu : NetworkBehaviour
     {
         if(loadingScreen.activeSelf == true)
         {
+            // Check if the terrain has finished loading for this client
+            if (meshGenerator != null && meshGenerator.hasLoadedTerrain)
+            {
+                HideLoadingScreen();
+            }
             return; // Don't allow any input when loading screen is active
         }
 

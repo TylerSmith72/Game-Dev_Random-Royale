@@ -59,6 +59,13 @@ public class PlayerSetup : NetworkBehaviour
             // If this instance is a client, send a request to the server
             RequestRespawnFromServer();
         }
+
+        PlayerMenu playerMenu = GetComponent<PlayerMenu>();
+        if (playerMenu != null)
+        {
+            playerMenu.ShowLoadingScreen();
+        }
+
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -122,6 +129,10 @@ public class PlayerSetup : NetworkBehaviour
         else
         {
             Debug.LogError("GameManager not found on client!");
+        }
+
+        if(!base.Owner.IsLocalClient){
+            return; // Don't set player camera for non-local clients
         }
 
         // Find the GameManager and register this player

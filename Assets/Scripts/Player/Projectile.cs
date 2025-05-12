@@ -44,6 +44,11 @@ public class Projectile : NetworkBehaviour
         OnHit(other);
     }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        OnHit(collision.collider);       
+    }
+
     private void OnHit(Collider collider)
     {
         if (IsServerInitialized)
