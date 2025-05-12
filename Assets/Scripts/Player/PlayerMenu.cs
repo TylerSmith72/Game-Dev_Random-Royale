@@ -7,6 +7,8 @@ public class PlayerMenu : NetworkBehaviour
 {
     [SerializeField]
     private GameObject playerMenu;
+    [SerializeField]
+    private GameObject playerCanvas;
     public GameObject loadingScreen;
     [SerializeField]
     private Text loadingText;
@@ -108,6 +110,21 @@ public class PlayerMenu : NetworkBehaviour
         if (loadingScreen != null)
         {
             loadingScreen.SetActive(false);
+        }
+    }
+
+    public override void OnStartNetwork()
+    {
+        base.OnStartNetwork();
+        Debug.Log($"OnStartNetwork called. IsLocalClient: {base.Owner.IsLocalClient}");
+
+        if (!base.Owner.IsLocalClient)
+        {
+            Debug.Log("Disabling components for non-local client.");
+            playerCanvas.SetActive(false);
+            playerMenu.SetActive(false);
+            loadingScreen.SetActive(false);
+            enabled = false;
         }
     }
 }
