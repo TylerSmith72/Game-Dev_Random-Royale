@@ -907,6 +907,7 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 5516940546119436445}
   _networkObjectCache: {fileID: 0}
   playerMenu: {fileID: 1413614833108132129}
+  playerCanvas: {fileID: 6637484561144463438}
   loadingScreen: {fileID: 4540852355468037562}
   loadingText: {fileID: 0}
   isMenuOpen: 1
