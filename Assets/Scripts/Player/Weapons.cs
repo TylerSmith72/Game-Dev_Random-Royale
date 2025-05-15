@@ -22,6 +22,11 @@ public class Weapons : NetworkBehaviour
         {
             return;
         }
+
+        if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.Playing)
+        {
+            return;
+        }
         
         if (IsOwner && Input.GetMouseButtonDown(0))
         {

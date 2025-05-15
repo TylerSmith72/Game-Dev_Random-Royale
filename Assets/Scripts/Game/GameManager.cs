@@ -46,18 +46,23 @@ public class GameManager : NetworkBehaviour
     private float _countdownTimer;
     private Coroutine _gameStartCoroutine;
     private int _currentPlayerCount = 0;
+    
+    public static GameManager Instance { get; private set; }
+    public GameState CurrentState => _currentState;
 
     public void Awake()
     {
+        Instance = this;
+
         terrainManagerObject = FindObjectOfType<SeedGenerator>()?.gameObject;
         Debug.Log("TerrainManager found: " + (terrainManagerObject != null));
-        
+
         // Hide the game over panel initially
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(false);
         }
-        
+
         // Set initial UI text
         UpdateGameStateUI();
     }
