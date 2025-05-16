@@ -42,7 +42,6 @@ public class MeshGenerator : MonoBehaviour
     private bool hasGeneratedData = false;
     public bool hasLoadedTerrain = false;
 
-    private float playerFOV = 90f;
 
     public void SetPlayer(GameObject playerTransform)
     {
