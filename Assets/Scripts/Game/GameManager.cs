@@ -153,31 +153,6 @@ public class GameManager : NetworkBehaviour
         UpdateGameStateClient(_currentState.ToString());
     }
 
-    // Client requests the current game state
-    [ServerRpc(RequireOwnership = false)]
-    public void RequestCurrentGameState(NetworkConnection conn = null)
-    {
-        SendCurrentGameState(conn, _currentState.ToString());
-    }
-
-    // Server sends the current game state to a specific client
-    [TargetRpc]
-    private void SendCurrentGameState(NetworkConnection conn, string stateName)
-    {
-        if (gameStateText != null)
-        {
-            gameStateText.text = $"Game State: {stateName}";
-        }
-
-        // Parse and update the local _currentState for this client
-        if (System.Enum.TryParse(stateName, out GameState parsedState))
-        {
-            _currentState = parsedState;
-        }
-
-        Debug.Log($"[TargetRpc] Game state sent to client: {stateName}");
-    }
-
     // Check if game is over (only one player alive)
     private void CheckGameOver()
     {

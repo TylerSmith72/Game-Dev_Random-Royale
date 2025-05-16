@@ -845,8 +845,6 @@ MonoBehaviour:
   healthSlider: {fileID: 5535982957507340309}
   healthText: {fileID: 767693855694199200}
   canvas: {fileID: 3902093097913391045}
-  playerBody: {fileID: 4780353276054860749}
-  visor: {fileID: 1054697917607789401}
 --- !u!114 &4882424392850860587
 MonoBehaviour:
   m_ObjectHideFlags: 0

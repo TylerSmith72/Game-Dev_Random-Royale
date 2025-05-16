@@ -5,7 +5,6 @@ using UnityEngine.UI;
 using FishNet.Object;
 using FishNet.Connection;
 using TMPro;
-using UnityEditor.SceneManagement;
 
 public class PlayerHealth : NetworkBehaviour
 {
@@ -21,8 +20,6 @@ public class PlayerHealth : NetworkBehaviour
     private Canvas canvas;
 
     private GameManager gameManager;
-    public GameObject playerBody;
-    public GameObject visor;
 
     public override void OnStartClient()
     {
@@ -32,33 +29,6 @@ public class PlayerHealth : NetworkBehaviour
         {
             GetComponent<PlayerHealth>().enabled = false;
             canvas.enabled = false;
-            return;
-        }
-
-        // Find the GameManager
-        gameManager = FindObjectOfType<GameManager>();
-        if (gameManager == null)
-        {
-            Debug.LogError("Player Health: GameManager not found!");
-        }
-
-        // --- Spectator cam logic for late joiners ---
-        if (gameManager != null)
-        {
-            // Fetch Game State
-            gameManager.RequestCurrentGameState(NetworkManager.ClientManager.Connection);
-
-            // Either join as Player or Spectator
-            Debug.Log("GameState Health: " + gameManager._currentState.ToString());
-            if (gameManager._currentState.ToString() == "Playing" ||
-                gameManager._currentState.ToString() == "GameOver")
-            {
-                EnableSpectatorCam();
-            }
-            else
-            {
-                EnablePlayerCam();
-            }
         }
     }
 
@@ -87,22 +57,6 @@ public class PlayerHealth : NetworkBehaviour
 
     void Update()
     {
-        // Find the GameManager if not already assigned
-        if (gameManager == null)
-        {
-            GameObject gmObj = GameObject.Find("GameManager");
-            if (gmObj != null)
-            {
-                gameManager = gmObj.GetComponent<GameManager>();
-                Debug.Log("GameManager reference assigned in Update.");
-            }
-            else
-            {
-                // Still not found, skip logic
-                return;
-            }
-        }
-
         if (Input.GetKeyDown(KeyCode.H))
         {
             UpdateHealth(-10);
@@ -242,61 +196,22 @@ public class PlayerHealth : NetworkBehaviour
     // Enable freecam and disable playercam controls
     public void EnableSpectatorCam()
     {
-        Debug.Log("Enabling spectator camera.");
         var cam = GetComponentInChildren<Camera>();
         var playerCam = cam.GetComponent<PlayerCam>();
         var freeCam = cam.GetComponent<FreeCam>();
 
         if (playerCam != null) playerCam.enabled = false;
-        if (playerBody != null)
-        {
-            playerBody.SetActive(false);
-            visor.SetActive(false);
-
-            if (gameObject.TryGetComponent<Rigidbody>(out Rigidbody rb))
-            {
-                Destroy(rb);
-                // rb.isKinematic = true;
-                // rb.useGravity = false;
-                // rb.velocity = Vector3.zero;
-                // rb.angularVelocity = Vector3.zero;
-            }
-            else
-            {
-                Debug.LogWarning("Rigidbody not found on playerBody.");
-
-            }
-        }
         if (freeCam != null) freeCam.enabled = true;
     }
 
     // Enable playercam and disable freecam controls
     public void EnablePlayerCam()
     {
-        Debug.Log("Enabling PlayerCam and disabling FreeCam.");
         var cam = GetComponentInChildren<Camera>();
         var playerCam = cam.GetComponent<PlayerCam>();
         var freeCam = cam.GetComponent<FreeCam>();
 
-        
         if (playerCam != null) playerCam.enabled = true;
-        if (playerBody != null)
-        {
-            playerBody.SetActive(true);
-            visor.SetActive(true);
-
-            if (gameObject.TryGetComponent<Rigidbody>(out Rigidbody rb))
-            {
-                rb.isKinematic = false;
-                rb.useGravity = true;
-            }
-            else
-            {
-                Debug.LogWarning("Rigidbody not found on playerBody.");
-
-            }
-        }
         if (freeCam != null) freeCam.enabled = false;
-
     }
 }
