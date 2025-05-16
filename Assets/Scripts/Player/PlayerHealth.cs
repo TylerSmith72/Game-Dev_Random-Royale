@@ -57,10 +57,10 @@ public class PlayerHealth : NetworkBehaviour
 
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.H))
+        if (Input.GetKeyDown(KeyCode.H))
         {
             UpdateHealth(-10);
-        }   
+        }
     }
 
     public void UpdateHealth(int amount)
@@ -105,7 +105,7 @@ public class PlayerHealth : NetworkBehaviour
     private void HandleDeath()
     {
         Debug.Log($"{gameObject.name} has died!");
-        
+
         // Notify the GameManager about the death
         if (gameManager != null && IsServerInitialized)
         {
@@ -114,7 +114,7 @@ public class PlayerHealth : NetworkBehaviour
 
         // Call the client-side death logic
         HandleDeathClient();
-        
+
         // Notify all clients about the death
         HandleDeathObserversRpc();
     }
@@ -179,7 +179,34 @@ public class PlayerHealth : NetworkBehaviour
         capsuleCollider.enabled = true;
 
         Debug.Log("Ragdoll effect enabled.");
+        StartCoroutine(DelayedSpectatorCam(5f));
     }
 
-    // We've removed the RespawnAfterDelay coroutine because the GameManager now handles respawning
+    private IEnumerator DelayedSpectatorCam(float delaySeconds)
+    {
+        yield return new WaitForSeconds(delaySeconds);
+        EnableSpectatorCam();
+    }
+    
+    // Enable freecam and disable playercam controls
+    public void EnableSpectatorCam()
+    {
+        var cam = GetComponentInChildren<Camera>();
+        var playerCam = cam.GetComponent<PlayerCam>();
+        var freeCam = cam.GetComponent<FreeCam>();
+
+        if (playerCam != null) playerCam.enabled = false;
+        if (freeCam != null) freeCam.enabled = true;
+    }
+
+    // Enable playercam and disable freecam controls
+    public void EnablePlayerCam()
+    {
+        var cam = GetComponentInChildren<Camera>();
+        var playerCam = cam.GetComponent<PlayerCam>();
+        var freeCam = cam.GetComponent<FreeCam>();
+
+        if (playerCam != null) playerCam.enabled = true;
+        if (freeCam != null) freeCam.enabled = false;
+    }
 }
