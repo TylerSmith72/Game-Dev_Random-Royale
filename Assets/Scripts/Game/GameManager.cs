@@ -254,23 +254,23 @@ public class GameManager : NetworkBehaviour
     {
         Debug.Log("Respawning player...");
 
-        // Ensure the connection has a player object to respawn
+        // Despawn old player
         if (conn.FirstObject != null)
         {
             ServerManager.Despawn(conn.FirstObject);
         }
 
         // Get a random spawn point
-        Vector3 spawnPosition = Vector3.zero;
+        Vector3 spawnPosition = GetRandomSpawnPosition();
         Quaternion spawnRotation = Quaternion.identity;
 
-        if (playerSpawner != null && playerSpawner.Spawns.Length > 0)
-        {
-            int randomIndex = Random.Range(0, playerSpawner.Spawns.Length);
-            Transform spawnPoint = playerSpawner.Spawns[randomIndex];
-            spawnPosition = spawnPoint.position;
-            spawnRotation = spawnPoint.rotation;
-        }
+        // if (playerSpawner != null && playerSpawner.Spawns.Length > 0)
+        // {
+        //     int randomIndex = Random.Range(0, playerSpawner.Spawns.Length);
+        //     Transform spawnPoint = playerSpawner.Spawns[randomIndex];
+        //     spawnPosition = spawnPoint.position;
+        //     spawnRotation = spawnPoint.rotation;
+        // }
 
         GameObject newPlayer = Instantiate(playerPrefab, spawnPosition, spawnRotation);
         ServerManager.Spawn(newPlayer, conn);
@@ -301,25 +301,98 @@ public class GameManager : NetworkBehaviour
         
         Debug.Log("Player respawned successfully.");
     }
+    
+    private Vector3 GetRandomSpawnPosition()
+    {
+        // Get MeshGenerator reference
+        var meshGen = FindObjectOfType<MeshGenerator>();
+        if (meshGen == null || meshGen.terrainDataDictionary == null || meshGen.terrainDataDictionary.Count == 0)
+        {
+            Debug.LogWarning("MeshGenerator or terrain data not ready, using fallback spawn.");
+            return Vector3.zero;
+        }
+
+        // Terrain bounds
+        float minX = -meshGen.xSize / 2f;
+        float maxX = meshGen.xSize / 2f;
+        float minZ = -meshGen.zSize / 2f;
+        float maxZ = meshGen.zSize / 2f;
+
+        for (int attempts = 0; attempts < 20; attempts++) // Try up to 20 times to find a valid spot
+        {
+            float x = Random.Range(minX, maxX);
+            float z = Random.Range(minZ, maxZ);
+
+            // Find the chunk this point is in
+            int chunkSize = meshGen.chunkSize;
+            float vertexSpacing = meshGen.vertexSpacing;
+            Vector2Int chunkCoord = new Vector2Int(
+                Mathf.FloorToInt(x / (vertexSpacing * chunkSize)),
+                Mathf.FloorToInt(z / (vertexSpacing * chunkSize))
+            );
+
+            if (meshGen.terrainDataDictionary.TryGetValue(chunkCoord, out MeshData meshData))
+            {
+                // Convert world position to local chunk position
+                float localX = ((x % (vertexSpacing * chunkSize)) + (vertexSpacing * chunkSize)) % (vertexSpacing * chunkSize);
+                float localZ = ((z % (vertexSpacing * chunkSize)) + (vertexSpacing * chunkSize)) % (vertexSpacing * chunkSize);
+
+                float y = 0f;
+                try
+                {
+                    y = GetHeightFromMeshData(meshData, localX, localZ, (int)(vertexSpacing * chunkSize));
+                }
+                catch
+                {
+                    continue; // Try another random point if out of bounds
+                }
+
+                if (y > 10 && y < 200)
+                {
+                    return new Vector3(x, y + 5f, z); // Spawn 5 meters above ground
+                }
+            }
+        }
+
+        // Fallback if no valid spot found
+        Debug.LogWarning("Could not find valid random spawn, using Vector3.zero.");
+        return Vector3.zero;
+    }
+
+    // Helper: Copy this from your TreeGenerator or make it static somewhere
+    private float GetHeightFromMeshData(MeshData meshData, float localX, float localZ, int chunkSize)
+    {
+        int resolution = Mathf.RoundToInt(Mathf.Sqrt(meshData.vertices.Length));
+        float vertexSpacing = (float)chunkSize / (resolution - 1);
+
+        int xIndex = Mathf.FloorToInt(localX / vertexSpacing);
+        int zIndex = Mathf.FloorToInt(localZ / vertexSpacing);
+
+        xIndex = Mathf.Clamp(xIndex, 0, resolution - 1);
+        zIndex = Mathf.Clamp(zIndex, 0, resolution - 1);
+
+        int vertexIndex = zIndex * resolution + xIndex;
+        return meshData.vertices[vertexIndex].y;
+    }
 
     // Create a method to handle player disconnection
     private void PlayerDisconnected(NetworkConnection conn)
     {
         if (!IsServerInitialized) return;
-        
+
         if (_registeredPlayers.ContainsKey(conn))
         {
             // Player disconnected
             _registeredPlayers.Remove(conn);
             _alivePlayers.Remove(conn);
             _deadPlayers.Remove(conn);
-            
+
             // Update player count
             _currentPlayerCount = _registeredPlayers.Count;
             UpdatePlayerCountClient(_currentPlayerCount);
-            
+
             Debug.Log($"Player disconnected. Total players: {_currentPlayerCount}");
-            
+
             // Check if game should end or state should change
             if (_currentState == GameState.Playing)
             {
