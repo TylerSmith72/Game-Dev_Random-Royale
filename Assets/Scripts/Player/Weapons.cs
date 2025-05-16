@@ -3,6 +3,8 @@ using FishNet.Object;
 
 public class Weapons : NetworkBehaviour
 {
+    private GameManager gameManager;
+
     [SerializeField]
     private GameObject projectilePrefab;
     [SerializeField]
@@ -16,18 +18,47 @@ public class Weapons : NetworkBehaviour
     [SerializeField]
     private LayerMask raycastMask;
 
+    private void Awake()
+    {
+        GameObject gmObj = GameObject.Find("GameManager");
+        if (gmObj != null)
+        {
+            gameManager = gmObj.GetComponent<GameManager>();
+        }
+        else
+        {
+            Debug.LogWarning("GameManager object not found in Awake.");
+        }
+    }
+
     private void Update()
     {
-        if(GetComponent<PlayerMenu>().isMenuOpen == true)
+        if (GetComponent<PlayerMenu>().isMenuOpen == true)
         {
             return;
         }
 
-        if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.Playing)
+        // Find the GameManager if not already assigned
+        if (gameManager == null)
+        {
+            GameObject gmObj = GameObject.Find("GameManager");
+            if (gmObj != null)
+            {
+                gameManager = gmObj.GetComponent<GameManager>();
+                Debug.Log("GameManager reference assigned in Update.");
+            }
+            else
+            {
+                // Still not found, skip logic
+                return;
+            }
+        }
+
+        if (gameManager == null || gameManager._currentState.ToString() != "Playing")
         {
             return;
         }
-        
+
         if (IsOwner && Input.GetMouseButtonDown(0))
         {
             Shoot();

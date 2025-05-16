@@ -23,22 +23,22 @@ public class GameManager : NetworkBehaviour
     public GameObject playerPrefab;
     public PlayerSpawner playerSpawner;
     public GameObject terrainManagerObject;
-    
+
     // UI References
     [SerializeField] private TextMeshProUGUI gameStateText;
     [SerializeField] private TextMeshProUGUI countdownText;
     [SerializeField] private TextMeshProUGUI playerCountText;
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private TextMeshProUGUI winnerText;
-    
+
     // Game settings
     [SerializeField] private int minPlayersToStart = 2;
     [SerializeField] private float gameStartCountdown = 10f;
     [SerializeField] private float gameOverDelay = 3f;
     [SerializeField] private float respawnDelay = 5f;
-    
+
     // Private variables for tracking game state
-    private GameState _currentState = GameState.WaitingForPlayers;
+    public GameState _currentState = GameState.WaitingForPlayers;
     private Dictionary<NetworkConnection, GameObject> _registeredPlayers = new Dictionary<NetworkConnection, GameObject>();
     private List<NetworkConnection> _alivePlayers = new List<NetworkConnection>();
     private List<NetworkConnection> _deadPlayers = new List<NetworkConnection>();
@@ -46,7 +46,7 @@ public class GameManager : NetworkBehaviour
     private float _countdownTimer;
     private Coroutine _gameStartCoroutine;
     private int _currentPlayerCount = 0;
-    
+
     public static GameManager Instance { get; private set; }
     public GameState CurrentState => _currentState;
 
@@ -71,7 +71,7 @@ public class GameManager : NetworkBehaviour
     // {
     //     base.OnStartServer();
     //     Debug.Log("GameManager started on server");
-        
+
     //     // Initialize the game state on the server
     //     SetGameState(GameState.WaitingForPlayers);
     // }
@@ -80,10 +80,10 @@ public class GameManager : NetworkBehaviour
     public void RegisterPlayer(GameObject player)
     {
         Debug.Log("Registering player in GameManager: " + player);
-        
+
         // Set references
         player.GetComponent<PlayerSetup>().SetGameManager(this.gameObject);
-        
+
         // If we're the server, add this player to our tracking
         if (IsServerInitialized)
         {
@@ -92,13 +92,13 @@ public class GameManager : NetworkBehaviour
             {
                 _registeredPlayers.Add(conn, player);
                 _alivePlayers.Add(conn);
-                
+
                 // Update player count
                 _currentPlayerCount = _registeredPlayers.Count;
                 UpdatePlayerCountClient(_currentPlayerCount);
-                
+
                 Debug.Log($"Player registered. Total players: {_currentPlayerCount}");
-                
+
                 // Check if we should start the game
                 CheckGameStart();
             }
@@ -112,7 +112,7 @@ public class GameManager : NetworkBehaviour
         {
             Debug.Log("Minimum players reached, starting countdown");
             SetGameState(GameState.Starting);
-            
+
             // Start the countdown coroutine
             if (_gameStartCoroutine != null)
             {
@@ -126,14 +126,14 @@ public class GameManager : NetworkBehaviour
     private IEnumerator StartGameCountdown()
     {
         _countdownTimer = gameStartCountdown;
-        
+
         while (_countdownTimer > 0)
         {
             UpdateCountdownClient((int)_countdownTimer);
             yield return new WaitForSeconds(1f);
             _countdownTimer--;
         }
-        
+
         // Start the game when countdown reaches zero
         SetGameState(GameState.Playing);
         UpdateCountdownClient(0); // Clear countdown
@@ -144,10 +144,10 @@ public class GameManager : NetworkBehaviour
     private void SetGameState(GameState newState)
     {
         if (!IsServerInitialized) return;
-        
+
         _currentState = newState;
         Debug.Log($"Game state changed to: {_currentState}");
-        
+
         // Update clients about the new state
         UpdateGameStateClient(_currentState.ToString());
     }
@@ -156,7 +156,7 @@ public class GameManager : NetworkBehaviour
     private void CheckGameOver()
     {
         if (!IsServerInitialized || _currentState != GameState.Playing) return;
-        
+
         // If only one player is alive or no players alive, end the game
         if (_alivePlayers.Count == 1)
         {
@@ -173,19 +173,19 @@ public class GameManager : NetworkBehaviour
     private IEnumerator EndGame()
     {
         SetGameState(GameState.GameOver);
-        
+
         // Display winner info
         string winnerName = "No winner";
         if (_lastPlayerStanding != null && _registeredPlayers.ContainsKey(_lastPlayerStanding))
         {
             winnerName = _registeredPlayers[_lastPlayerStanding].name;
         }
-        
+
         ShowGameOverClient(winnerName);
-        
+
         // Wait for a delay then restart the game
         yield return new WaitForSeconds(gameOverDelay);
-        
+
         // Reset for a new game
         ResetGame();
     }
@@ -194,13 +194,13 @@ public class GameManager : NetworkBehaviour
     private void ResetGame()
     {
         if (!IsServerInitialized) return;
-        
+
         // Respawn all players
         foreach (var player in _registeredPlayers)
         {
             ServerRequestRespawn(player.Key);
         }
-        
+
         // Clear lists and reset game state
         _deadPlayers.Clear();
         _alivePlayers.Clear();
@@ -208,11 +208,11 @@ public class GameManager : NetworkBehaviour
         {
             _alivePlayers.Add(conn);
         }
-        
+
         // Wait for players to join again if needed
         SetGameState(GameState.WaitingForPlayers);
         HideGameOverClient();
-        
+
         // Check if we already have enough players to start again
         CheckGameStart();
     }
@@ -221,16 +221,16 @@ public class GameManager : NetworkBehaviour
     public void PlayerDied(NetworkConnection conn)
     {
         if (!IsServerInitialized) return;
-        
+
         if (_alivePlayers.Contains(conn))
         {
             _alivePlayers.Remove(conn);
             _deadPlayers.Add(conn);
             Debug.Log($"Player died. Remaining players: {_alivePlayers.Count}");
-            
+
             // Check if the game is over
             CheckGameOver();
-            
+
             // Schedule respawn after delay
             //StartCoroutine(RespawnAfterDelay(conn));
         }
@@ -239,7 +239,7 @@ public class GameManager : NetworkBehaviour
     private IEnumerator RespawnAfterDelay(NetworkConnection conn)
     {
         yield return new WaitForSeconds(respawnDelay);
-        
+
         // Only respawn during Playing state
         if (_currentState == GameState.Playing)
         {
@@ -274,7 +274,7 @@ public class GameManager : NetworkBehaviour
 
         GameObject newPlayer = Instantiate(playerPrefab, spawnPosition, spawnRotation);
         ServerManager.Spawn(newPlayer, conn);
-        
+
         // Set up references
         newPlayer.GetComponent<PlayerSetup>().SetGameManager(gameObject);
 
@@ -282,7 +282,7 @@ public class GameManager : NetworkBehaviour
         {
             terrainManagerObject.GetComponent<SeedGenerator>().SetPlayer(newPlayer);
         }
-        
+
         // Update the registered players dictionary
         if (_registeredPlayers.ContainsKey(conn))
         {
@@ -292,16 +292,16 @@ public class GameManager : NetworkBehaviour
         {
             _registeredPlayers.Add(conn, newPlayer);
         }
-        
+
         // Ensure the player is considered alive after respawning
         if (!_alivePlayers.Contains(conn))
         {
             _alivePlayers.Add(conn);
         }
-        
+
         Debug.Log("Player respawned successfully.");
     }
-    
+
     private Vector3 GetRandomSpawnPosition()
     {
         // Get MeshGenerator reference
@@ -410,29 +410,29 @@ public class GameManager : NetworkBehaviour
             }
         }
     }
-    
+
     // Subscribe to connection state changes
     public override void OnStartServer()
     {
         base.OnStartServer();
         Debug.Log("GameManager started on server");
-        
+
         // Initialize the game state on the server
         SetGameState(GameState.WaitingForPlayers);
-        
+
         // Subscribe to client disconnection events
         ServerManager.OnRemoteConnectionState += OnRemoteConnectionState;
     }
-    
+
     // Clean up when the object is destroyed
     public override void OnStopServer()
     {
         base.OnStopServer();
-        
+
         // Unsubscribe from client disconnection events
         ServerManager.OnRemoteConnectionState -= OnRemoteConnectionState;
     }
-    
+
     // Handle client connection state changes
     private void OnRemoteConnectionState(NetworkConnection conn, FishNet.Transporting.RemoteConnectionStateArgs args)
     {
@@ -442,8 +442,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    #region Client RPCs
-    
     // Update game state on all clients
     [ObserversRpc]
     private void UpdateGameStateClient(string stateName)
@@ -452,10 +450,16 @@ public class GameManager : NetworkBehaviour
         {
             gameStateText.text = $"Game State: {stateName}";
         }
-        
+
+        // Parse and update the local _currentState for clients
+        if (System.Enum.TryParse(stateName, out GameState parsedState))
+        {
+            _currentState = parsedState;
+        }
+
         Debug.Log($"Game state updated to: {stateName}");
     }
-    
+
     // Update player count on all clients
     [ObserversRpc]
     private void UpdatePlayerCountClient(int count)
@@ -465,7 +469,7 @@ public class GameManager : NetworkBehaviour
             playerCountText.text = $"Players: {count}";
         }
     }
-    
+
     // Update countdown on all clients
     [ObserversRpc]
     private void UpdateCountdownClient(int seconds)
@@ -483,20 +487,20 @@ public class GameManager : NetworkBehaviour
             }
         }
     }
-    
+
     // Start the game on all clients
     [ObserversRpc]
     private void StartGameOnAllClients()
     {
         Debug.Log("Game started!");
-        
-        // Enable player movement/actions if they were disabled during countdown
+
         if (IsOwner)
         {
-            // Any client-side game start logic can go here
+            // Call Random Respawn
+            //ServerRequestRespawn(base.Owner);
         }
     }
-    
+
     // Show game over screen on all clients
     [ObserversRpc]
     private void ShowGameOverClient(string winnerName)
@@ -504,16 +508,16 @@ public class GameManager : NetworkBehaviour
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
-            
+
             if (winnerText != null)
             {
                 winnerText.text = $"Winner: {winnerName}";
             }
         }
-        
+
         Debug.Log($"Game Over! Winner: {winnerName}");
     }
-    
+
     // Hide game over screen on all clients
     [ObserversRpc]
     private void HideGameOverClient()
@@ -523,7 +527,7 @@ public class GameManager : NetworkBehaviour
             gameOverPanel.SetActive(false);
         }
     }
-    
+
     // Update UI elements based on current state
     private void UpdateGameStateUI()
     {
@@ -531,12 +535,10 @@ public class GameManager : NetworkBehaviour
         {
             gameStateText.text = $"Game State: {_currentState}";
         }
-        
+
         if (playerCountText != null)
         {
             playerCountText.text = $"Players: {_currentPlayerCount}";
         }
     }
-    
-    #endregion
 }

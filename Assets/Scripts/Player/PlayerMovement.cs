@@ -6,6 +6,7 @@ using Unity.VisualScripting;
 
 public class PlayerMovement : NetworkBehaviour
 {
+    private GameManager gameManager;
     public GameObject playerModel;
     public GameObject visor;
 
@@ -23,9 +24,17 @@ public class PlayerMovement : NetworkBehaviour
     Vector3 velocity;
     bool isGrounded;
 
-    private void Start()
+    private void Awake()
     {
-
+        GameObject gmObj = GameObject.Find("GameManager");
+        if (gmObj != null)
+        {
+            gameManager = gmObj.GetComponent<GameManager>();
+        }
+        else
+        {
+            Debug.LogWarning("GameManager object not found in Awake.");
+        }
     }
 
     private void Update()
@@ -41,6 +50,27 @@ public class PlayerMovement : NetworkBehaviour
         float z = Input.GetAxis("Vertical");
 
         if(GetComponent<PlayerMenu>().isMenuOpen == true || GetComponent<PlayerMenu>().loadingScreen.activeSelf == true)
+        {
+            return;
+        }
+
+        // Find the GameManager if not already assigned
+        if (gameManager == null)
+        {
+            GameObject gmObj = GameObject.Find("GameManager");
+            if (gmObj != null)
+            {
+                gameManager = gmObj.GetComponent<GameManager>();
+                Debug.Log("GameManager reference assigned in Update.");
+            }
+            else
+            {
+                // Still not found, skip logic
+                return;
+            }
+        }
+
+        if (gameManager == null || gameManager._currentState.ToString() == "Starting" || gameManager._currentState.ToString() == "GameOver")
         {
             return;
         }
