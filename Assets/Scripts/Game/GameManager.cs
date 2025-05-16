@@ -41,7 +41,8 @@ public class GameManager : NetworkBehaviour
     public GameState _currentState = GameState.WaitingForPlayers;
     private Dictionary<NetworkConnection, GameObject> _registeredPlayers = new Dictionary<NetworkConnection, GameObject>();
     private List<NetworkConnection> _alivePlayers = new List<NetworkConnection>();
-    private List<NetworkConnection> _deadPlayers = new List<NetworkConnection>();
+    public List<NetworkConnection> _deadPlayers = new List<NetworkConnection>();
+    public List<int> deadPlayerIds = new List<int>(); // Client-side list of dead player IDs
     private NetworkConnection _lastPlayerStanding;
     private float _countdownTimer;
     private Coroutine _gameStartCoroutine;
@@ -234,6 +235,28 @@ public class GameManager : NetworkBehaviour
             // Schedule respawn after delay
             //StartCoroutine(RespawnAfterDelay(conn));
         }
+    }
+
+    // Client calls this to request the dead players list
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestDeadPlayersList(NetworkConnection conn = null)
+    {
+        // Only the server runs this, then sends the list to all clients
+        int[] deadIds = new int[_deadPlayers.Count];
+        for (int i = 0; i < _deadPlayers.Count; i++)
+        {
+            deadIds[i] = _deadPlayers[i].ClientId;
+        }
+        SyncDeadPlayersClient(deadIds);
+    }
+
+    // Server sends the dead players list to all clients
+    [ObserversRpc]
+    private void SyncDeadPlayersClient(int[] deadIds)
+    {
+        deadPlayerIds.Clear();
+        deadPlayerIds.AddRange(deadIds);
+        Debug.Log("Synced dead player IDs from server.");
     }
 
     private IEnumerator RespawnAfterDelay(NetworkConnection conn)

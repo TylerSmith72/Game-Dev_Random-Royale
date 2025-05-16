@@ -127,6 +127,11 @@ public class PlayerHealth : NetworkBehaviour
 
     private void HandleDeathClient()
     {
+        if (gameManager != null)
+        {
+            gameManager.RequestDeadPlayersList();
+        }
+
         // Disable movement and camera
         PlayerMovement playerMovement = GetComponent<PlayerMovement>();
         if (playerMovement != null)

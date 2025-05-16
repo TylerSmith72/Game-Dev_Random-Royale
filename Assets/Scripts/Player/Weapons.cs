@@ -54,6 +54,12 @@ public class Weapons : NetworkBehaviour
             }
         }
 
+        int myId = NetworkManager.ClientManager.Connection.ClientId;
+        if (gameManager.deadPlayerIds.Contains(myId))
+        {
+            return;
+        }
+
         if (gameManager == null || gameManager._currentState.ToString() != "Playing")
         {
             return;
