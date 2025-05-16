@@ -131,8 +131,7 @@ public class PlayerSetup : NetworkBehaviour
             Debug.LogError("GameManager not found on client!");
         }
 
-        if (!base.Owner.IsLocalClient)
-        {
+        if(!base.Owner.IsLocalClient){
             return; // Don't set player camera for non-local clients
         }
 
@@ -146,7 +145,7 @@ public class PlayerSetup : NetworkBehaviour
         {
             Debug.LogError("TerrainManager not found on client!");
         }
-
+        
         GameObject meshGenerator = FindObjectOfType<MeshGenerator>()?.gameObject;
         if (meshGenerator != null)
         {
@@ -156,7 +155,6 @@ public class PlayerSetup : NetworkBehaviour
         {
             Debug.LogError("TerrainManager not found on client!");
         }
-        
     }
 
     public void SetGameManager(GameObject gameManagerObject)

@@ -1808,7 +1808,6 @@ GameObject:
   - component: {fileID: 2533676237452409060}
   - component: {fileID: 9056896742453841316}
   - component: {fileID: 4018231216139285853}
-  - component: {fileID: 4996408192637082351}
   m_Layer: 0
   m_Name: PlayerCam
   m_TagString: Untagged
@@ -1897,17 +1896,3 @@ MonoBehaviour:
   sensX: 100
   sensY: 100
   player: {fileID: 5091356365696080582}
---- !u!114 &4996408192637082351
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9175487174880427919}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a54e80d866c33ba4485891db21b04c9b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 30
-  lookSpeed: 5

@@ -46,11 +46,11 @@ public class PlayerCam : MonoBehaviour
         // reduce fov when holding right mouse button
         if (Input.GetMouseButton(1))
         {
-            GetComponent<Camera>().fieldOfView = baseFov / 3f;
+            GetComponent<Camera>().fieldOfView = Mathf.Lerp(GetComponent<Camera>().fieldOfView, baseFov / 3f, Time.deltaTime * 20);
         }
         else
         {
-            GetComponent<Camera>().fieldOfView = baseFov;
+            GetComponent<Camera>().fieldOfView = Mathf.Lerp(GetComponent<Camera>().fieldOfView, baseFov, Time.deltaTime * 10);
         }
     }
 }
